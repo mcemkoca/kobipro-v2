@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { getDemoUser } from "@/lib/auth";
+import { getDemoUser, hasRole } from "@/lib/auth";
 import DashboardLayout from "../components/DashboardLayout";
-import { BarChart3, Calendar, TrendingUp, Users, Receipt, Wrench } from "lucide-react";
+import { BarChart3, Calendar, TrendingUp, Users, Receipt, Wrench, Shield } from "lucide-react";
 
 const reportCards = [
   { title: "Gelir Raporu", description: "Aylık ve yıllık gelir özeti", icon: TrendingUp, href: "#" },
@@ -15,6 +15,23 @@ const reportCards = [
 export default async function ReportsPage() {
   const user = await getDemoUser();
   if (!user) redirect("/login");
+
+  const authorized = await hasRole(["ADMIN", "MANAGER"]);
+  if (!authorized) {
+    return (
+      <DashboardLayout
+        pageTitle="Raporlar"
+        breadcrumbs={[{ label: "Raporlar" }]}
+        user={{ name: user.name, email: user.email, role: user.role }}
+      >
+        <div className="flex flex-col items-center justify-center py-24">
+          <Shield size={48} className="text-slate-700 mb-4" />
+          <h2 className="text-lg font-semibold text-slate-300 mb-1">Erişim Reddedildi</h2>
+          <p className="text-sm text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const userName = user.name;
   const role = user.role;

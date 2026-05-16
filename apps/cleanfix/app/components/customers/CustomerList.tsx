@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Users } from "lucide-react";
 import { CustomerForm, CustomerFormData } from "./CustomerForm";
 import { CustomerModal } from "./CustomerModal";
 import { createCustomer, updateCustomer, deleteCustomer } from "@/app/actions/customers";
+import { EmptyState } from "@/app/components/ui/EmptyState";
+import { ToastContainer } from "@/app/components/ui/Toast";
+import { useToast } from "@/app/components/ui/useToast";
 import { Button } from "@kobipro/ui";
 
 interface Customer {
@@ -26,6 +30,7 @@ export function CustomerList({ customers, onRefresh }: CustomerListProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
+  const { toasts, addToast, removeToast } = useToast();
 
   async function handleDelete(id: string) {
     if (!confirm("Bu müşteriyi silmek istediğinize emin misiniz?")) return;
@@ -33,92 +38,97 @@ export function CustomerList({ customers, onRefresh }: CustomerListProps) {
     const result = await deleteCustomer(id);
     setLoading(null);
     if (result.success) {
+      addToast("Müşteri silindi", "success");
       onRefresh();
     } else {
-      alert(result.error);
+      addToast(result.error || "Silinirken hata oluştu", "error");
     }
   }
 
   return (
     <div className="space-y-4">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-slate-100">Müşteriler</h2>
         <Button onClick={() => setIsCreateModalOpen(true)}>+ Yeni Müşteri</Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-800/50">
-            <tr>
-              <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">İsim</th>
-              <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">E-posta</th>
-              <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">Telefon</th>
-              <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">Adres</th>
-              <th className="px-5 py-3 text-right font-medium text-slate-400 text-xs uppercase tracking-wider">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {customers.length === 0 && (
+      {customers.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Henüz müşteri yok"
+          description="İlk müşteri eklemek için + butonuna tıklayın"
+          actionLabel="Yeni Müşteri Ekle"
+          onAction={() => setIsCreateModalOpen(true)}
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-800/50">
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-slate-500">
-                  Henüz müşteri yok. Yeni bir müşteri ekleyin.
-                </td>
+                <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">İsim</th>
+                <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">E-posta</th>
+                <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">Telefon</th>
+                <th className="px-5 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">Adres</th>
+                <th className="px-5 py-3 text-right font-medium text-slate-400 text-xs uppercase tracking-wider">İşlemler</th>
               </tr>
-            )}
-            {customers.map((customer) => (
-              <tr key={customer.id} className="hover:bg-slate-800/50 transition-colors">
-                <td className="px-5 py-3 font-medium text-slate-200">{customer.name}</td>
-                <td className="px-5 py-3 text-slate-400">{customer.email || "—"}</td>
-                <td className="px-5 py-3 text-slate-200">{customer.phone || "—"}</td>
-                <td className="px-5 py-3 text-slate-400 max-w-xs truncate">
-                  {customer.address || "—"}
-                </td>
-                <td className="px-5 py-3 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setExpandedCustomer(expandedCustomer === customer.id ? null : customer.id)}
-                      className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-                    >
-                      {expandedCustomer === customer.id ? "Kapat" : "Detay"}
-                    </button>
-                    <button
-                      onClick={() => setEditingCustomer(customer)}
-                      className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-                    >
-                      Düzenle
-                    </button>
-                    <button
-                      onClick={() => handleDelete(customer.id)}
-                      disabled={loading === customer.id}
-                      className="text-xs px-2 py-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-colors"
-                    >
-                      Sil
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {customers.map((customer) =>
-              expandedCustomer === customer.id ? (
-                <tr key={`${customer.id}-detail`}>
-                  <td colSpan={5} className="px-5 py-3 bg-slate-800/30">
-                    <div className="text-sm space-y-1">
-                      {customer.notes && (
-                        <p className="text-slate-400">
-                          <span className="font-medium text-slate-300">Notlar:</span> {customer.notes}
-                        </p>
-                      )}
-                      <p className="text-slate-500 text-xs">
-                        Oluşturulma: {new Date(customer.createdAt).toLocaleDateString("tr-TR")}
-                      </p>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {customers.map((customer) => (
+                <tr key={customer.id} className="hover:bg-slate-800/50 transition-colors">
+                  <td className="px-5 py-3 font-medium text-slate-200">{customer.name}</td>
+                  <td className="px-5 py-3 text-slate-400">{customer.email || "—"}</td>
+                  <td className="px-5 py-3 text-slate-200">{customer.phone || "—"}</td>
+                  <td className="px-5 py-3 text-slate-400 max-w-xs truncate">
+                    {customer.address || "—"}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setExpandedCustomer(expandedCustomer === customer.id ? null : customer.id)}
+                        className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+                      >
+                        {expandedCustomer === customer.id ? "Kapat" : "Detay"}
+                      </button>
+                      <button
+                        onClick={() => setEditingCustomer(customer)}
+                        className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+                      >
+                        Düzenle
+                      </button>
+                      <button
+                        onClick={() => handleDelete(customer.id)}
+                        disabled={loading === customer.id}
+                        className="text-xs px-2 py-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-colors"
+                      >
+                        Sil
+                      </button>
                     </div>
                   </td>
                 </tr>
-              ) : null
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+              {customers.map((customer) =>
+                expandedCustomer === customer.id ? (
+                  <tr key={`${customer.id}-detail`}>
+                    <td colSpan={5} className="px-5 py-3 bg-slate-800/30">
+                      <div className="text-sm space-y-1">
+                        {customer.notes && (
+                          <p className="text-slate-400">
+                            <span className="font-medium text-slate-300">Notlar:</span> {customer.notes}
+                          </p>
+                        )}
+                        <p className="text-slate-500 text-xs">
+                          Oluşturulma: {new Date(customer.createdAt).toLocaleDateString("tr-TR")}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : null
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {isCreateModalOpen && (
         <CustomerModal title="Yeni Müşteri" onClose={() => setIsCreateModalOpen(false)}>
@@ -127,9 +137,10 @@ export function CustomerList({ customers, onRefresh }: CustomerListProps) {
               const result = await createCustomer(data);
               if (result.success) {
                 setIsCreateModalOpen(false);
+                addToast("Müşteri kaydedildi", "success");
                 onRefresh();
               } else {
-                alert(result.error);
+                addToast(result.error || "Kaydedilirken hata oluştu", "error");
               }
             }}
           />
@@ -144,9 +155,10 @@ export function CustomerList({ customers, onRefresh }: CustomerListProps) {
               const result = await updateCustomer(editingCustomer.id, data);
               if (result.success) {
                 setEditingCustomer(null);
+                addToast("Müşteri güncellendi", "success");
                 onRefresh();
               } else {
-                alert(result.error);
+                addToast(result.error || "Güncellenirken hata oluştu", "error");
               }
             }}
           />

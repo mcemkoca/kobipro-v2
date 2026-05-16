@@ -53,6 +53,7 @@ export default function LoginPage() {
                 <option value="ADMIN">Admin</option>
                 <option value="MANAGER">Manager</option>
                 <option value="CUSTOMER">Customer</option>
+                <option value="TECHNICIAN">Technician</option>
               </select>
             </div>
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { getDemoUser } from "@/lib/auth";
+import { getDemoUser, hasRole } from "@/lib/auth";
 import DashboardLayout from "../components/DashboardLayout";
+import { EmptyState } from "../components/ui/EmptyState";
 import { UserCircle, Plus, Search, Phone, Mail, Shield } from "lucide-react";
 import { cn } from "@kobipro/ui";
 
@@ -21,6 +22,23 @@ const statusStyles: Record<string, string> = {
 export default async function StaffPage() {
   const user = await getDemoUser();
   if (!user) redirect("/login");
+
+  const authorized = await hasRole(["ADMIN", "MANAGER"]);
+  if (!authorized) {
+    return (
+      <DashboardLayout
+        pageTitle="Personel"
+        breadcrumbs={[{ label: "Personel" }]}
+        user={{ name: user.name, email: user.email, role: user.role }}
+      >
+        <div className="flex flex-col items-center justify-center py-24">
+          <Shield size={48} className="text-slate-700 mb-4" />
+          <h2 className="text-lg font-semibold text-slate-300 mb-1">Erişim Reddedildi</h2>
+          <p className="text-sm text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const userName = user.name;
   const role = user.role;
@@ -54,63 +72,72 @@ export default async function StaffPage() {
         </a>
       </div>
 
-      {/* Staff Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
-                <th className="px-5 py-3 font-medium">Personel</th>
-                <th className="px-5 py-3 font-medium">Rol</th>
-                <th className="px-5 py-3 font-medium">İletişim</th>
-                <th className="px-5 py-3 font-medium">Durum</th>
-                <th className="px-5 py-3 font-medium text-right">Tamamlanan</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {staff.map((member) => (
-                <tr key={member.id} className="hover:bg-slate-800/50 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-white">
-                        {member.name.split(" ").map(n => n[0]).join("")}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-200">{member.name}</p>
-                        <p className="text-xs text-slate-500">{member.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                      <Shield size={13} className="text-slate-500" />
-                      {member.role}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="space-y-1 text-xs text-slate-400">
-                      <div className="flex items-center gap-1.5">
-                        <Mail size={12} />
-                        {member.email}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Phone size={12} />
-                        {member.phone}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border", statusStyles[member.status] || "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
-                      {member.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-right text-slate-200 font-medium">{member.jobs} iş</td>
+      {staff.length === 0 ? (
+        <EmptyState
+          icon={UserCircle}
+          title="Henüz personel yok"
+          description="İlk personel eklemek için + butonuna tıklayın"
+          actionLabel="Yeni Personel Ekle"
+          onAction={() => { /* navigate handled by link above */ }}
+        />
+      ) : (
+        <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
+                  <th className="px-5 py-3 font-medium">Personel</th>
+                  <th className="px-5 py-3 font-medium">Rol</th>
+                  <th className="px-5 py-3 font-medium">İletişim</th>
+                  <th className="px-5 py-3 font-medium">Durum</th>
+                  <th className="px-5 py-3 font-medium text-right">Tamamlanan</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {staff.map((member) => (
+                  <tr key={member.id} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-white">
+                          {member.name.split(" ").map(n => n[0]).join("")}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-200">{member.name}</p>
+                          <p className="text-xs text-slate-500">{member.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                        <Shield size={13} className="text-slate-500" />
+                        {member.role}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="space-y-1 text-xs text-slate-400">
+                        <div className="flex items-center gap-1.5">
+                          <Mail size={12} />
+                          {member.email}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Phone size={12} />
+                          {member.phone}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border", statusStyles[member.status] || "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
+                        {member.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-slate-200 font-medium">{member.jobs} iş</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </DashboardLayout>
   );
 }

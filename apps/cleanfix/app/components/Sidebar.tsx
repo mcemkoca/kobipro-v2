@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -19,15 +19,15 @@ import {
 } from "lucide-react";
 import { cn } from "@kobipro/ui";
 
-const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Randevular", href: "/bookings", icon: CalendarDays },
-  { name: "Müşteriler", href: "/customers", icon: Users },
-  { name: "Hizmetler", href: "/services", icon: Wrench },
-  { name: "Personel", href: "/staff", icon: UserCircle },
-  { name: "Faturalar", href: "/invoices", icon: FileText },
-  { name: "Raporlar", href: "/reports", icon: BarChart3 },
-  { name: "Ayarlar", href: "/settings", icon: Settings },
+const allNavItems = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
+  { name: "Randevular", href: "/bookings", icon: CalendarDays, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
+  { name: "Müşteriler", href: "/customers", icon: Users, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
+  { name: "Hizmetler", href: "/services", icon: Wrench, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
+  { name: "Personel", href: "/staff", icon: UserCircle, roles: ["ADMIN", "MANAGER"] },
+  { name: "Faturalar", href: "/invoices", icon: FileText, roles: ["ADMIN", "MANAGER"] },
+  { name: "Raporlar", href: "/reports", icon: BarChart3, roles: ["ADMIN", "MANAGER"] },
+  { name: "Ayarlar", href: "/settings", icon: Settings, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
 ];
 
 interface SidebarProps {
@@ -37,30 +37,33 @@ interface SidebarProps {
     role: string;
     avatar?: string;
   };
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navItems = allNavItems.filter((item) =>
+    item.roles.includes(user?.role ?? "CUSTOMER")
+  );
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    if (mobileOpen && onMobileClose) {
+      onMobileClose();
+    }
+  }, [pathname]);
 
   return (
     <>
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={onMobileClose}
         />
       )}
-
-      {/* Mobile toggle */}
-      <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 transition-colors"
-        aria-label="Toggle menu"
-      >
-        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
 
       {/* Sidebar */}
       <aside
@@ -91,6 +94,13 @@ export default function Sidebar({ user }: SidebarProps) {
           <span className="text-lg font-bold tracking-tight text-white">
             CleanFix
           </span>
+          <button
+            onClick={onMobileClose}
+            className="lg:hidden ml-auto p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -102,7 +112,6 @@ export default function Sidebar({ user }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMobileOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group",
                   isActive

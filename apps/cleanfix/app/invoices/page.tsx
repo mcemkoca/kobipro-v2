@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { getDemoUser } from "@/lib/auth";
+import { getDemoUser, hasRole } from "@/lib/auth";
 import DashboardLayout from "../components/DashboardLayout";
-import { FileText, Plus, Search, Calendar, Download } from "lucide-react";
+import { EmptyState } from "../components/ui/EmptyState";
+import { FileText, Plus, Search, Calendar, Download, Shield } from "lucide-react";
 import { cn } from "@kobipro/ui";
 
 const invoices = [
@@ -22,6 +23,23 @@ const statusStyles: Record<string, string> = {
 export default async function InvoicesPage() {
   const user = await getDemoUser();
   if (!user) redirect("/login");
+
+  const authorized = await hasRole(["ADMIN", "MANAGER"]);
+  if (!authorized) {
+    return (
+      <DashboardLayout
+        pageTitle="Faturalar"
+        breadcrumbs={[{ label: "Faturalar" }]}
+        user={{ name: user.name, email: user.email, role: user.role }}
+      >
+        <div className="flex flex-col items-center justify-center py-24">
+          <Shield size={48} className="text-slate-700 mb-4" />
+          <h2 className="text-lg font-semibold text-slate-300 mb-1">Erişim Reddedildi</h2>
+          <p className="text-sm text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const userName = user.name;
   const role = user.role;
@@ -67,39 +85,48 @@ export default async function InvoicesPage() {
         </div>
       </div>
 
-      {/* Invoices Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
-                <th className="px-5 py-3 font-medium">Fatura No</th>
-                <th className="px-5 py-3 font-medium">Müşteri</th>
-                <th className="px-5 py-3 font-medium">Tarih</th>
-                <th className="px-5 py-3 font-medium">Son Ödeme</th>
-                <th className="px-5 py-3 font-medium">Durum</th>
-                <th className="px-5 py-3 font-medium text-right">Tutar</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {invoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-slate-800/50 transition-colors">
-                  <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{invoice.id}</td>
-                  <td className="px-5 py-3.5 text-slate-200 font-medium">{invoice.customer}</td>
-                  <td className="px-5 py-3.5 text-slate-400 text-xs">{invoice.date}</td>
-                  <td className="px-5 py-3.5 text-slate-400 text-xs">{invoice.dueDate}</td>
-                  <td className="px-5 py-3.5">
-                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border", statusStyles[invoice.status] || "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
-                      {invoice.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-slate-200 font-medium text-right">{invoice.amount}</td>
+      {invoices.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Henüz fatura yok"
+          description="İlk fatura eklemek için + butonuna tıklayın"
+          actionLabel="Yeni Fatura Ekle"
+          onAction={() => { /* navigate handled by link above */ }}
+        />
+      ) : (
+        <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
+                  <th className="px-5 py-3 font-medium">Fatura No</th>
+                  <th className="px-5 py-3 font-medium">Müşteri</th>
+                  <th className="px-5 py-3 font-medium">Tarih</th>
+                  <th className="px-5 py-3 font-medium">Son Ödeme</th>
+                  <th className="px-5 py-3 font-medium">Durum</th>
+                  <th className="px-5 py-3 font-medium text-right">Tutar</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {invoices.map((invoice) => (
+                  <tr key={invoice.id} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{invoice.id}</td>
+                    <td className="px-5 py-3.5 text-slate-200 font-medium">{invoice.customer}</td>
+                    <td className="px-5 py-3.5 text-slate-400 text-xs">{invoice.date}</td>
+                    <td className="px-5 py-3.5 text-slate-400 text-xs">{invoice.dueDate}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border", statusStyles[invoice.status] || "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
+                        {invoice.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-200 font-medium text-right">{invoice.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </DashboardLayout>
   );
 }

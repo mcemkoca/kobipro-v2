@@ -6,6 +6,8 @@ import { getCustomers } from "@/app/actions/customers";
 import { getServices } from "@/app/actions/services";
 import { getStaff } from "@/app/actions/staff";
 import { BookingList } from "@/app/components/bookings/BookingList";
+import { SkeletonTable } from "@/app/components/ui/SkeletonTable";
+import { ErrorState } from "@/app/components/ui/ErrorState";
 import DashboardLayout from "@/app/components/DashboardLayout";
 
 interface Booking {
@@ -33,6 +35,7 @@ export default function BookingsPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const [bookingsRes, customersRes, servicesRes, staffRes] = await Promise.all([
       getBookings(),
       getCustomers(),
@@ -71,13 +74,9 @@ export default function BookingsPage() {
   return (
     <DashboardLayout pageTitle="Randevular">
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-100" />
-        </div>
+        <SkeletonTable columns={6} rows={5} />
       ) : error ? (
-        <div className="p-4 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-          {error}
-        </div>
+        <ErrorState message={error} onRetry={fetchData} />
       ) : (
         <BookingList
           bookings={bookings}

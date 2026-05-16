@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { getCustomers } from "@/app/actions/customers";
 import { CustomerList } from "@/app/components/customers/CustomerList";
+import { SkeletonTable } from "@/app/components/ui/SkeletonTable";
+import { ErrorState } from "@/app/components/ui/ErrorState";
 import DashboardLayout from "@/app/components/DashboardLayout";
 
 interface Customer {
@@ -22,6 +24,7 @@ export default function CustomersPage() {
 
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const result = await getCustomers();
     if (result.success) {
       setCustomers(result.data || []);
@@ -39,13 +42,9 @@ export default function CustomersPage() {
   return (
     <DashboardLayout pageTitle="Müşteriler">
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-100" />
-        </div>
+        <SkeletonTable columns={5} rows={5} />
       ) : error ? (
-        <div className="p-4 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-          {error}
-        </div>
+        <ErrorState message={error} onRetry={fetchCustomers} />
       ) : (
         <CustomerList customers={customers} onRefresh={fetchCustomers} />
       )}

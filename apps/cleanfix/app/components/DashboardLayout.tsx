@@ -35,9 +35,7 @@ export default function DashboardLayout({
           breadcrumbs={breadcrumbs}
         />
 
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );
