@@ -61,6 +61,17 @@ export async function updateService(id: string, data: { name?: string; descripti
   }
 }
 
+export async function deleteService(id: string) {
+  try {
+    await prisma.service.delete({ where: { id } });
+    revalidatePath("/services");
+    return { success: true };
+  } catch (error) {
+    console.error("deleteService error:", error);
+    return { success: false, error: "Hizmet silinirken hata oluştu" };
+  }
+}
+
 export async function toggleServiceStatus(id: string, active: boolean) {
   try {
     const service = await prisma.service.update({
