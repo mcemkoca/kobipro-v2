@@ -1,0 +1,99 @@
+"use server";
+
+import { prisma } from "@kobipro/db";
+import { revalidatePath } from "next/cache";
+
+export async function getServices() {
+  try {
+    const services = await prisma.service.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return { success: true, data: services };
+  } catch (error) {
+    return { success: false, error: "Hizmetler yüklenirken hata oluştu" };
+  }
+}
+
+export async function getServiceById(id: string) {
+  try {
+    const service = await prisma.service.findUnique({
+      where: { id },
+      include: { bookings: true },
+    });
+    return { success: true, data: service };
+  } catch (error) {
+    return { success: false, error: "Hizmet bulunurken hata oluştu" };
+  }
+}
+
+export async function createService(data: {
+  name: string;
+  description?: string;
+  price: number;
+  duration: number;
+  active?: boolean;
+}) {
+  try {
+    const service = await prisma.service.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        duration: data.duration || 60,
+        active: data.active ?? true,
+      },
+    });
+    revalidatePath("/services");
+    return { success: true, data: service };
+  } catch (error) {
+    return { success: false, error: "Hizmet oluşturulurken hata oluştu" };
+  }
+}
+
+export async function updateService(
+  id: string,
+  data: {
+    name?: string;
+    description?: string;
+    price?: number;
+    duration?: number;
+    active?: boolean;
+  }
+) {
+  try {
+    const service = await prisma.service.update({
+      where: { id },
+      data,
+    });
+    revalidatePath("/services");
+    return { success: true, data: service };
+  } catch (error) {
+    return { success: false, error: "Hizmet güncellenirken hata oluştu" };
+  }
+}
+
+export async function deleteService(id: string) {
+  try {
+    await prisma.service.delete({ where: { id } });
+    revalidatePath("/services");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Hizmet silinirken hata oluştu" };
+  }
+}
+
+export async function toggleServiceStatus(id: string) {
+  try {
+    const current = await prisma.service.findUnique({ where: { id } });
+    if (!current) return { success: false, error: "Hizmet bulunamadı" };
+
+    const service = await prisma.service.update({
+      where: { id },
+      data: { active: !current.active },
+    });
+    revalidatePath("/services");
+    return { success: true, data: service };
+  } catch (error) {
+    return { success: false, error: "Durum değiştirilirken hata oluştu" };
+  }
+}
