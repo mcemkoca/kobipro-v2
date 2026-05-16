@@ -71,3 +71,31 @@ export async function deleteService(id: string) {
     return { success: false, error: "Hizmet silinirken hata oluştu" };
   }
 }
+
+export async function toggleServiceStatus(id: string, active: boolean) {
+  try {
+    const service = await prisma.service.update({
+      where: { id },
+      data: { active },
+    });
+    revalidatePath("/services");
+    return { success: true, data: service };
+  } catch (error) {
+    console.error("toggleServiceStatus error:", error);
+    return { success: false, error: "Hizmet durumu güncellenirken hata oluştu" };
+  }
+}
+
+export async function toggleServiceStatus(id: string, active: boolean) {
+  try {
+    const service = await prisma.service.update({
+      where: { id },
+      data: { active },
+    });
+    revalidatePath("/services");
+    return { success: true, data: service };
+  } catch (error) {
+    console.error("toggleServiceStatus error:", error);
+    return { success: false, error: "Hizmet durumu güncellenirken hata oluştu" };
+  }
+}
