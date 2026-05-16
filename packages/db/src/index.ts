@@ -8,13 +8,12 @@ let prisma: PrismaClient;
 
 if (connectionString) {
   const pool = new Pool({
-    connectionString,
+    connectionString: connectionString.replace("?sslmode=require", ""),
     ssl: { rejectUnauthorized: false },
   });
   const adapter = new PrismaPg(pool);
   prisma = new PrismaClient({ adapter });
 } else {
-  // Fallback for local dev without DB
   prisma = new PrismaClient() as any;
 }
 
