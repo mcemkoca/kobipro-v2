@@ -1,7 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "pipeline": {
+  "tasks": {
+    "@kobipro/db#build": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "outputs": ["../../node_modules/.prisma/client/**"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
