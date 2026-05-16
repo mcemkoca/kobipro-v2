@@ -72,11 +72,13 @@ export async function deleteService(id: string) {
   }
 }
 
-export async function toggleServiceStatus(id: string, active: boolean) {
+export async function toggleServiceStatus(id: string) {
   try {
+    const current = await prisma.service.findUnique({ where: { id }, select: { active: true } });
+    if (!current) return { success: false, error: "Hizmet bulunamadı" };
     const service = await prisma.service.update({
       where: { id },
-      data: { active },
+      data: { active: !current.active },
     });
     revalidatePath("/services");
     return { success: true, data: service };
