@@ -1,26 +1,29 @@
-// Mock PrismaClient for demo mode (no database required)
-// When DATABASE_URL is available, this loads the real PrismaClient
-
-const isDemoMode = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes("dummy");
+// Smart PrismaClient: real DB when DATABASE_URL is set, mock when not
+const hasDb = !!(process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("dummy"));
 
 let prisma: any;
 
-if (isDemoMode) {
-  // Demo mode: mock prisma that throws DB errors (triggers demo data fallbacks)
-  prisma = {
-    $connect: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); },
-    $disconnect: async () => {},
-    service: { findMany: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, findUnique: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, create: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, update: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, delete: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); } },
-    booking: { findMany: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, findUnique: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, create: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, update: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, delete: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); } },
-    customer: { findMany: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, findUnique: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, create: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, update: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, delete: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); } },
-    staff: { findMany: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, findUnique: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, create: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, update: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, delete: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); } },
-    invoice: { findMany: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, findUnique: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, create: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, update: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); }, delete: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); } },
-    user: { findMany: async () => { throw new Error("DATABASE_CONNECTION_FAILED"); } },
-  };
-} else {
-  // Real database mode
+if (hasDb) {
   const { PrismaClient } = require("@prisma/client");
-  prisma = new PrismaClient();
+  prisma = new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
+} else {
+  // Demo mode: mock prisma that throws DB errors (triggers demo data fallbacks)
+  const err = () => {
+    const e = new Error("DATABASE_CONNECTION_FAILED");
+    throw e;
+  };
+  prisma = {
+    $connect: err,
+    $disconnect: async () => {},
+    service: { findMany: err, findUnique: err, create: err, update: err, delete: err },
+    booking: { findMany: err, findUnique: err, create: err, update: err, delete: err },
+    customer: { findMany: err, findUnique: err, create: err, update: err, delete: err },
+    staff: { findMany: err, findUnique: err, create: err, update: err, delete: err },
+    invoice: { findMany: err, findUnique: err, create: err, update: err, delete: err },
+    user: { findMany: err },
+  };
 }
 
 export { prisma };
