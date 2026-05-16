@@ -1,32 +1,73 @@
-// Smart PrismaClient: real DB when DATABASE_URL is set, mock when not
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+
 const hasDb = !!(process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("dummy"));
 
-let prisma: any;
+let prisma: PrismaClient;
 
 if (hasDb) {
-  const { PrismaClient } = require("@prisma/client");
-  prisma = new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
+  const connectionString = process.env["DATABASE_URL"] || "";
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+
+  const globalForPrisma = globalThis as unknown as {
+    prisma: PrismaClient | undefined;
+  };
+
+  prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
+
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = prisma;
+  }
 } else {
   // Demo mode: mock prisma that throws DB errors (triggers demo data fallbacks)
   const err = () => {
     const e = new Error("DATABASE_CONNECTION_FAILED");
     throw e;
   };
+
+  const mockModel = {
+    findMany: err,
+    findUnique: err,
+    findFirst: err,
+    findUniqueOrThrow: err,
+    findFirstOrThrow: err,
+    create: err,
+    createMany: err,
+    update: err,
+    updateMany: err,
+    upsert: err,
+    delete: err,
+    deleteMany: err,
+    count: err,
+    aggregate: err,
+    groupBy: err,
+    aggregateRaw: err,
+    findRaw: err,
+  };
+
   prisma = {
     $connect: err,
     $disconnect: async () => {},
-    service: { findMany: err, findUnique: err, create: err, update: err, delete: err },
-    booking: { findMany: err, findUnique: err, create: err, update: err, delete: err },
-    customer: { findMany: err, findUnique: err, create: err, update: err, delete: err },
-    staff: { findMany: err, findUnique: err, create: err, update: err, delete: err },
-    invoice: { findMany: err, findUnique: err, create: err, update: err, delete: err },
-    user: { findMany: err },
-  };
+    $transaction: async () => [],
+    $queryRaw: err,
+    $queryRawUnsafe: err,
+    $executeRaw: err,
+    $executeRawUnsafe: err,
+    $extends: err,
+    $on: () => {},
+    service: mockModel,
+    booking: mockModel,
+    customer: mockModel,
+    staff: mockModel,
+    invoice: mockModel,
+    user: mockModel,
+    organization: mockModel,
+    company: mockModel,
+    payment: mockModel,
+  } as unknown as PrismaClient;
 }
 
 export { prisma };
-export const Role = { ADMIN: "ADMIN", MANAGER: "MANAGER", EMPLOYEE: "EMPLOYEE", CUSTOMER: "CUSTOMER" };
-export const BookingStatus = { PENDING: "PENDING", CONFIRMED: "CONFIRMED", IN_PROGRESS: "IN_PROGRESS", COMPLETED: "COMPLETED", CANCELLED: "CANCELLED" };
-export const InvoiceStatus = { DRAFT: "DRAFT", SENT: "SENT", PAID: "PAID", OVERDUE: "OVERDUE", CANCELLED: "CANCELLED" };
+export * from "@prisma/client";
