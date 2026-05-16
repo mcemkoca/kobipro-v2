@@ -24,7 +24,7 @@ const allNavItems = [
   { name: "Randevular", href: "/bookings", icon: CalendarDays, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
   { name: "Müşteriler", href: "/customers", icon: Users, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
   { name: "Hizmetler", href: "/services", icon: Wrench, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
-  { name: "Personel", href: "/staff", icon: UserCircle, roles: ["ADMIN", "MANAGER"] },
+  { name: "Personel", href: "/staff", icon: UserCircle, roles: ["ADMIN", "MANAGER", "TECHNICIAN"] },
   { name: "Faturalar", href: "/invoices", icon: FileText, roles: ["ADMIN", "MANAGER"] },
   { name: "Raporlar", href: "/reports", icon: BarChart3, roles: ["ADMIN", "MANAGER"] },
   { name: "Ayarlar", href: "/settings", icon: Settings, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
@@ -44,9 +44,10 @@ interface SidebarProps {
 export default function Sidebar({ user, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
 
-  const navItems = allNavItems.filter((item) =>
-    item.roles.includes(user?.role ?? "CUSTOMER")
-  );
+  const navItems = allNavItems.filter((item) => {
+    const currentRole = user?.role ?? "ADMIN";
+    return item.roles.includes(currentRole);
+  });
 
   // Close mobile sidebar on route change
   useEffect(() => {

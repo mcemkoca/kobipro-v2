@@ -1,154 +1,117 @@
-import "dotenv/config";
-import { PrismaClient, BookingStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { PrismaClient } from "@prisma/client";
 
-const connectionString = process.env["DATABASE_URL"] || "";
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // ─── 1. STAFF (5 members) ───
-  const staffData = [
-    { name: "Ayşe Yılmaz", email: "ayse.yilmaz@cleanfix.com", phone: "+90 532 111 2233", role: Role.ADMIN, active: true },
-    { name: "Mehmet Kaya", email: "mehmet.kaya@cleanfix.com", phone: "+90 533 222 3344", role: Role.MANAGER, active: true },
-    { name: "Elif Demir", email: "elif.demir@cleanfix.com", phone: "+90 534 333 4455", role: Role.EMPLOYEE, active: true },
-    { name: "Burak Şahin", email: "burak.sahin@cleanfix.com", phone: "+90 535 444 5566", role: Role.EMPLOYEE, active: true },
-    { name: "Zeynep Çelik", email: "zeynep.celik@cleanfix.com", phone: "+90 536 555 6677", role: Role.EMPLOYEE, active: false },
-  ];
+  // Clear existing data
+  await prisma.payment.deleteMany();
+  await prisma.invoice.deleteMany();
+  await prisma.booking.deleteMany();
+  await prisma.staff.deleteMany();
+  await prisma.service.deleteMany();
+  await prisma.customer.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.company.deleteMany();
+  await prisma.organization.deleteMany();
 
-  const staff = await Promise.all(
-    staffData.map((s) => prisma.staff.create({ data: s }))
-  );
-  console.log(`✅ Created ${staff.length} staff members`);
-
-  // ─── 2. SERVICES (10 cleaning services) ───
-  const servicesData = [
-    { name: "Ev Temizliği", description: "Standart ev temizliği hizmeti", price: 450.00, duration: 120, active: true },
-    { name: "Ofis Temizliği", description: "Profesyonel ofis temizliği", price: 600.00, duration: 180, active: true },
-    { name: "Halı Yıkama", description: "Derinlemesine halı temizliği", price: 250.00, duration: 90, active: true },
-    { name: "Koltuk Temizliği", description: "Kumaş ve deri koltuk temizliği", price: 300.00, duration: 60, active: true },
-    { name: "Cam Temizliği", description: "İç ve dış cam temizliği", price: 200.00, duration: 90, active: true },
-    { name: "İnşaat Sonrası Temizlik", description: "Yapı sonrası detaylı temizlik", price: 1200.00, duration: 360, active: true },
-    { name: "Depo Temizliği", description: "Depo ve arşiv temizliği", price: 800.00, duration: 240, active: true },
-    { name: "Baca Temizliği", description: "Baca ve havalandırma temizliği", price: 350.00, duration: 120, active: false },
-    { name: "Bahçe Bakımı", description: "Bahçe temizliği ve bakım", price: 500.00, duration: 180, active: true },
-    { name: "Dezenfeksiyon", description: "UV ve kimyasal dezenfeksiyon", price: 400.00, duration: 90, active: true },
-  ];
-
-  const services = await Promise.all(
-    servicesData.map((s) => prisma.service.create({ data: s }))
-  );
-  console.log(`✅ Created ${services.length} services`);
-
-  // ─── 3. CUSTOMERS (20 customers) ───
-  const customerData = [
-    { name: "Ali Veli", email: "ali.veli@gmail.com", phone: "+90 537 111 2233", address: "Ataşehir, İstanbul", notes: "Düzenli müşteri" },
-    { name: "Fatma Aydın", email: "fatma.aydin@hotmail.com", phone: "+90 538 222 3344", address: "Kadıköy, İstanbul", notes: "" },
-    { name: "Hüseyin Özdemir", email: "huseyin.ozdemir@yahoo.com", phone: "+90 539 333 4455", address: "Beşiktaş, İstanbul", notes: "Ofis temizliği talep ediyor" },
-    { name: "Seda Koç", email: "seda.koc@gmail.com", phone: "+90 530 444 5566", address: "Üsküdar, İstanbul", notes: "" },
-    { name: "Can Yıldız", email: "can.yildiz@outlook.com", phone: "+90 531 555 6677", address: "Maltepe, İstanbul", notes: "Kedisi var" },
-    { name: "Deniz Arslan", email: "deniz.arslan@gmail.com", phone: "+90 532 666 7788", address: "Kartal, İstanbul", notes: "" },
-    { name: "Ebru Kılıç", email: "ebru.kilic@hotmail.com", phone: "+90 533 777 8899", address: "Pendik, İstanbul", notes: "Haftada bir" },
-    { name: "Murat Tekin", email: "murat.tekin@yahoo.com", phone: "+90 534 888 9900", address: "Şişli, İstanbul", notes: "" },
-    { name: "Gizem Yılmaz", email: "gizem.yilmaz@gmail.com", phone: "+90 535 999 0011", address: "Bakırköy, İstanbul", notes: "Alerjik reaksiyon" },
-    { name: "Serkan Doğan", email: "serkan.dogan@outlook.com", phone: "+90 536 000 1122", address: "Sarıyer, İstanbul", notes: "" },
-    { name: "Nur Şahin", email: "nur.sahin@gmail.com", phone: "+90 537 111 3344", address: "Tuzla, İstanbul", notes: "Villa temizliği" },
-    { name: "Oğuzhan Akın", email: "oguzhan.akin@hotmail.com", phone: "+90 538 222 4455", address: "Beykoz, İstanbul", notes: "" },
-    { name: "Yasemin Polat", email: "yasemin.polat@yahoo.com", phone: "+90 539 333 5566", address: "Ümraniye, İstanbul", notes: "Eski bina" },
-    { name: "Kemal Erdoğan", email: "kemal.erdogan@gmail.com", phone: "+90 530 444 6677", address: "Fatih, İstanbul", notes: "" },
-    { name: "Büşra Çetin", email: "busra.cetin@outlook.com", phone: "+90 531 555 7788", address: "Eyüp, İstanbul", notes: "Hamile" },
-    { name: "Tolga Mercan", email: "tolga.mercan@hotmail.com", phone: "+90 532 666 8899", address: "Gaziosmanpaşa, İstanbul", notes: "" },
-    { name: "Selin Avcı", email: "selin.avci@gmail.com", phone: "+90 533 777 9900", address: "Beylikdüzü, İstanbul", notes: "Site içi" },
-    { name: "Emre Toprak", email: "emre.toprak@yahoo.com", phone: "+90 534 888 0011", address: "Bağcılar, İstanbul", notes: "" },
-    { name: "Aslı Kara", email: "asli.kara@gmail.com", phone: "+90 535 999 1122", address: "Zeytinburnu, İstanbul", notes: "Küçük apartman" },
-    { name: "Barış Tan", email: "baris.tan@outlook.com", phone: "+90 536 000 2233", address: "Florya, İstanbul", notes: "" },
-  ];
-
-  const customers = await Promise.all(
-    customerData.map((c) => prisma.customer.create({ data: c }))
-  );
-  console.log(`✅ Created ${customers.length} customers`);
-
-  // ─── 4. BOOKINGS (30 appointments) ───
-  const statuses = [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS, BookingStatus.COMPLETED, BookingStatus.CANCELLED];
-  const today = new Date();
-
-  const bookingsData = Array.from({ length: 30 }, (_, i) => {
-    const customer = customers[i % customers.length];
-    const service = services[i % services.length];
-    const staffMember = staff[i % staff.length];
-    const date = new Date(today);
-    date.setDate(date.getDate() + (i % 14) - 7); // spread across last week and next week
-    const hours = 9 + (i % 9);
-    const minutes = (i % 4) * 15;
-
-    return {
-      customerId: customer.id,
-      serviceId: service.id,
-      staffId: staffMember.id,
-      date: date,
-      time: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`,
-      status: statuses[i % statuses.length],
-      notes: i % 5 === 0 ? "Özel not: Lütfen sessiz çalışın" : "",
-    };
+  // Organization
+  const org = await prisma.organization.create({
+    data: { name: "CleanFix Ltd.", slug: "cleanfix", description: "Profesyonel temizlik ve bakım hizmetleri", website: "https://cleanfix.com" },
   });
 
-  const bookings = await Promise.all(
-    bookingsData.map((b) => prisma.booking.create({ data: b }))
-  );
-  console.log(`✅ Created ${bookings.length} bookings`);
+  // Services
+  const services = await prisma.$transaction([
+    prisma.service.create({ data: { name: "Ev Temizliği", description: "Genel ev temizliği — mutfak, banyo, salon, yatak odaları", price: 450, duration: 120, active: true } }),
+    prisma.service.create({ data: { name: "Ofis Temizliği", description: "Profesyonel ofis ve iş yeri temizliği", price: 1200, duration: 180, active: true } }),
+    prisma.service.create({ data: { name: "Halı Yıkama", description: "Derinlemesine halı yıkama ve kurutma", price: 320, duration: 90, active: true } }),
+    prisma.service.create({ data: { name: "Koltuk Yıkama", description: "Koltuk ve kanepe kumaş temizliği", price: 280, duration: 60, active: true } }),
+    prisma.service.create({ data: { name: "Cam Temizliği", description: "İç ve dış cephe cam temizliği", price: 180, duration: 45, active: true } }),
+    prisma.service.create({ data: { name: "Dış Cephe Temizliği", description: "Bina dış cephe yıkama ve boya öncesi hazırlık", price: 2100, duration: 240, active: false } }),
+    prisma.service.create({ data: { name: "İnşaat Sonrası Temizlik", description: "Yeni yapılmış veya renovasyon sonrası detaylı temizlik", price: 850, duration: 300, active: true } }),
+    prisma.service.create({ data: { name: "Dezenfeksiyon", description: "Hijyenik alan dezenfeksiyonu ve sterilizasyon", price: 550, duration: 120, active: true } }),
+    prisma.service.create({ data: { name: "Boya Badana", description: "İç mekan boya ve badana hizmeti", price: 1500, duration: 480, active: true } }),
+    prisma.service.create({ data: { name: "Marangozluk", description: "Ahşap tamiri, dolap montajı, kapı ayarı", price: 650, duration: 180, active: true } }),
+  ]);
+  console.log(`✅ ${services.length} services created`);
 
-  // ─── 5. INVOICES (10 invoices) ───
-  const invoiceStatuses = [InvoiceStatus.DRAFT, InvoiceStatus.SENT, InvoiceStatus.PAID, InvoiceStatus.OVERDUE, InvoiceStatus.CANCELLED];
+  // Staff
+  const staffMembers = await prisma.$transaction([
+    prisma.staff.create({ data: { name: "Ali Korkmaz", email: "ali@cleanfix.com", phone: "+90 532 111 22 33", role: "EMPLOYEE", active: true } }),
+    prisma.staff.create({ data: { name: "Merve Toprak", email: "merve@cleanfix.com", phone: "+90 533 222 33 44", role: "MANAGER", active: true } }),
+    prisma.staff.create({ data: { name: "Burak Şahin", email: "burak@cleanfix.com", phone: "+90 535 333 44 55", role: "EMPLOYEE", active: true } }),
+    prisma.staff.create({ data: { name: "Deniz Yıldız", email: "deniz@cleanfix.com", phone: "+90 536 444 55 66", role: "EMPLOYEE", active: true } }),
+    prisma.staff.create({ data: { name: "Can Özdemir", email: "can@cleanfix.com", phone: "+90 537 555 66 77", role: "ADMIN", active: true } }),
+    prisma.staff.create({ data: { name: "Selin Koç", email: "selin@cleanfix.com", phone: "+90 538 666 77 88", role: "EMPLOYEE", active: true } }),
+    prisma.staff.create({ data: { name: "Emre Kaya", email: "emre@cleanfix.com", phone: "+90 539 777 88 99", role: "EMPLOYEE", active: false } }),
+    prisma.staff.create({ data: { name: "Dilara Aydın", email: "dilara@cleanfix.com", phone: "+90 540 888 99 00", role: "EMPLOYEE", active: true } }),
+  ]);
+  console.log(`✅ ${staffMembers.length} staff created`);
 
-  const invoicesData = Array.from({ length: 10 }, (_, i) => {
-    const customer = customers[i % customers.length];
-    const dueDate = new Date(today);
-    dueDate.setDate(dueDate.getDate() + (i % 30));
-    const status = invoiceStatuses[i % invoiceStatuses.length];
-    const paidDate = status === InvoiceStatus.PAID ? new Date(today) : null;
+  // Customers
+  const customers = await prisma.$transaction([
+    prisma.customer.create({ data: { name: "Ahmet Yılmaz", email: "ahmet.yilmaz@email.com", phone: "+90 555 123 45 67", address: "Kadıköy, İstanbul", notes: "Aylık düzenli müşteri" } }),
+    prisma.customer.create({ data: { name: "Ayşe Kaya", email: "ayse.kaya@email.com", phone: "+90 555 234 56 78", address: "Beşiktaş, İstanbul", notes: "Ofis temizliği her Cuma" } }),
+    prisma.customer.create({ data: { name: "Mehmet Demir", email: "mehmet.demir@email.com", phone: "+90 555 345 67 89", address: "Ataşehir, İstanbul", notes: "Halı yıkama 3 ayda bir" } }),
+    prisma.customer.create({ data: { name: "Fatma Şahin", email: "fatma.sahin@email.com", phone: "+90 555 456 78 90", address: "Maltepe, İstanbul", notes: "Koltuk yıkama talebi" } }),
+    prisma.customer.create({ data: { name: "Ali Can", email: "ali.can@email.com", phone: "+90 555 567 89 01", address: "Şişli, İstanbul", notes: "Dış cephe temizliği apartman yöneticisi" } }),
+    prisma.customer.create({ data: { name: "Zeynep Arslan", email: "zeynep.arslan@email.com", phone: "+90 555 678 90 12", address: "Üsküdar, İstanbul", notes: "İlk kez hizmet alacak" } }),
+    prisma.customer.create({ data: { name: "Murat Tekin", email: "murat.tekin@email.com", phone: "+90 555 789 01 23", address: "Bakırköy, İstanbul", notes: "İnşaat sonrası temizlik" } }),
+    prisma.customer.create({ data: { name: "Elif Korkmaz", email: "elif.korkmaz@email.com", phone: "+90 555 890 12 34", address: "Pendik, İstanbul", notes: "Dezenfeksiyon hizmeti" } }),
+    prisma.customer.create({ data: { name: "Serkan Yıldız", email: "serkan.yildiz@email.com", phone: "+90 555 901 23 45", address: "Kartal, İstanbul", notes: "Boya badana talebi" } }),
+    prisma.customer.create({ data: { name: "Deniz Özdemir", email: "deniz.ozdemir@email.com", phone: "+90 555 012 34 56", address: "Tuzla, İstanbul", notes: "Marangozluk hizmeti" } }),
+    prisma.customer.create({ data: { name: "Hakan Aydın", email: "hakan.aydin@email.com", phone: "+90 555 111 22 33", address: "Sarıyer, İstanbul", notes: "Cam temizliği villa" } }),
+    prisma.customer.create({ data: { name: "Sibel Koç", email: "sibel.koc@email.com", phone: "+90 555 222 33 44", address: "Beylikdüzü, İstanbul", notes: "Haftalık ev temizliği" } }),
+  ]);
+  console.log(`✅ ${customers.length} customers created`);
 
-    return {
-      customerId: customer.id,
-      amount: (150 + i * 75).toFixed(2),
-      status,
-      dueDate,
-      paidDate,
-    };
+  // Bookings (realistic schedule)
+  const bookings = await prisma.$transaction([
+    prisma.booking.create({ data: { customerId: customers[0].id, serviceId: services[0].id, staffId: staffMembers[0].id, date: new Date("2025-05-15"), time: "09:00", status: "COMPLETED", notes: "Müşteri memnun" } }),
+    prisma.booking.create({ data: { customerId: customers[1].id, serviceId: services[1].id, staffId: staffMembers[1].id, date: new Date("2025-05-15"), time: "14:00", status: "COMPLETED", notes: "Ofis temizliği tamamlandı" } }),
+    prisma.booking.create({ data: { customerId: customers[2].id, serviceId: services[2].id, staffId: staffMembers[2].id, date: new Date("2025-05-16"), time: "10:00", status: "COMPLETED", notes: "Halılar kurutuldu" } }),
+    prisma.booking.create({ data: { customerId: customers[3].id, serviceId: services[3].id, staffId: staffMembers[3].id, date: new Date("2025-05-16"), time: "16:00", status: "IN_PROGRESS", notes: "Koltuk temizliği devam ediyor" } }),
+    prisma.booking.create({ data: { customerId: customers[4].id, serviceId: services[4].id, staffId: staffMembers[0].id, date: new Date("2025-05-17"), time: "09:00", status: "CONFIRMED", notes: "Villa cam temizliği" } }),
+    prisma.booking.create({ data: { customerId: customers[5].id, serviceId: services[0].id, staffId: staffMembers[5].id, date: new Date("2025-05-17"), time: "11:00", status: "PENDING", notes: "İlk ziyaret" } }),
+    prisma.booking.create({ data: { customerId: customers[6].id, serviceId: services[6].id, staffId: staffMembers[2].id, date: new Date("2025-05-18"), time: "08:00", status: "CONFIRMED", notes: "İnşaat sonrası büyük temizlik" } }),
+    prisma.booking.create({ data: { customerId: customers[7].id, serviceId: services[7].id, staffId: staffMembers[3].id, date: new Date("2025-05-18"), time: "13:00", status: "PENDING", notes: "Dezenfeksiyon" } }),
+    prisma.booking.create({ data: { customerId: customers[8].id, serviceId: services[8].id, staffId: staffMembers[6].id, date: new Date("2025-05-19"), time: "09:00", status: "CANCELLED", notes: "Müşteri iptal etti" } }),
+    prisma.booking.create({ data: { customerId: customers[9].id, serviceId: services[9].id, staffId: staffMembers[7].id, date: new Date("2025-05-19"), time: "14:00", status: "CONFIRMED", notes: "Dolap montajı" } }),
+    prisma.booking.create({ data: { customerId: customers[10].id, serviceId: services[4].id, staffId: staffMembers[0].id, date: new Date("2025-05-20"), time: "10:00", status: "PENDING", notes: "Villa 3 katlı" } }),
+    prisma.booking.create({ data: { customerId: customers[11].id, serviceId: services[0].id, staffId: staffMembers[5].id, date: new Date("2025-05-20"), time: "15:00", status: "CONFIRMED", notes: "Haftalık düzenli" } }),
+  ]);
+  console.log(`✅ ${bookings.length} bookings created`);
+
+  // Invoices
+  const invoices = await prisma.$transaction([
+    prisma.invoice.create({ data: { customerId: customers[0].id, amount: 450, status: "PAID", dueDate: new Date("2025-06-15"), paidDate: new Date("2025-05-15") } }),
+    prisma.invoice.create({ data: { customerId: customers[1].id, amount: 1200, status: "PAID", dueDate: new Date("2025-06-15"), paidDate: new Date("2025-05-15") } }),
+    prisma.invoice.create({ data: { customerId: customers[2].id, amount: 320, status: "PAID", dueDate: new Date("2025-06-16"), paidDate: new Date("2025-05-16") } }),
+    prisma.invoice.create({ data: { customerId: customers[3].id, amount: 280, status: "OVERDUE", dueDate: new Date("2025-04-20") } }),
+    prisma.invoice.create({ data: { customerId: customers[4].id, amount: 180, status: "SENT", dueDate: new Date("2025-06-17") } }),
+    prisma.invoice.create({ data: { customerId: customers[5].id, amount: 450, status: "DRAFT", dueDate: new Date("2025-06-20") } }),
+    prisma.invoice.create({ data: { customerId: customers[6].id, amount: 850, status: "SENT", dueDate: new Date("2025-06-18") } }),
+    prisma.invoice.create({ data: { customerId: customers[7].id, amount: 550, status: "PAID", dueDate: new Date("2025-06-19"), paidDate: new Date("2025-05-17") } }),
+  ]);
+  console.log(`✅ ${invoices.length} invoices created`);
+
+  // Users (for auth)
+  await prisma.user.createMany({
+    data: [
+      { email: "admin@cleanfix.com", name: "Admin User", role: "ADMIN", organizationId: org.id },
+      { email: "manager@cleanfix.com", name: "Manager User", role: "MANAGER", organizationId: org.id },
+      { email: "customer@email.com", name: "Customer User", role: "CUSTOMER" },
+    ],
   });
-
-  const invoices = await Promise.all(
-    invoicesData.map((inv) => prisma.invoice.create({ data: inv }))
-  );
-  console.log(`✅ Created ${invoices.length} invoices`);
-
-  // ─── 6. PAYMENTS (linked to paid invoices) ───
-  const paidInvoices = invoices.filter((inv) => inv.status === InvoiceStatus.PAID);
-  const payments = await Promise.all(
-    paidInvoices.map((inv) =>
-      prisma.payment.create({
-        data: {
-          invoiceId: inv.id,
-          amount: inv.amount,
-          method: PaymentMethod.CREDIT_CARD,
-          status: PaymentStatus.COMPLETED,
-          date: inv.paidDate || new Date(),
-        },
-      })
-    )
-  );
-  console.log(`✅ Created ${payments.length} payments`);
+  console.log(`✅ 3 users created`);
 
   console.log("🎉 Seed complete!");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seed failed:", e);
+    console.error("❌ Seed error:", e);
     process.exit(1);
   })
   .finally(async () => {
