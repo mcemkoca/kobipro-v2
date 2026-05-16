@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 // Demo mode: no real Clerk keys needed
 const DEMO_MODE =
@@ -13,22 +14,10 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/api/webhook(.*)",
   "/api/health",
-  "/_next/(.*)",
   "/favicon.ico",
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-
-const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
-  "/bookings(.*)",
-  "/customers(.*)",
-  "/services(.*)",
-  "/staff(.*)",
-  "/invoices(.*)",
-  "/reports(.*)",
-  "/settings(.*)",
-]);
 
 function getRoleFromClaims(
   sessionClaims: Record<string, unknown> | null | undefined
@@ -37,12 +26,13 @@ function getRoleFromClaims(
   return metadata?.role;
 }
 
-export default clerkMiddleware(async (auth, req) => {
-  // Demo mode: allow everything
-  if (DEMO_MODE) {
-    return NextResponse.next();
-  }
+// Plain middleware for demo mode (no Clerk auth)
+async function demoMiddleware(req: NextRequest) {
+  return NextResponse.next();
+}
 
+// Full Clerk middleware for production
+const clerkAuthMiddleware = clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth();
 
   if (!isPublicRoute(req)) {
@@ -50,7 +40,6 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    // Admin-only routes
     if (isAdminRoute(req)) {
       const role = getRoleFromClaims(sessionClaims);
       if (role !== "ADMIN") {
@@ -61,6 +50,8 @@ export default clerkMiddleware(async (auth, req) => {
 
   return NextResponse.next();
 });
+
+export default DEMO_MODE ? demoMiddleware : clerkAuthMiddleware;
 
 export const config = {
   matcher: [
