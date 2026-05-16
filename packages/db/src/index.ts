@@ -7,7 +7,10 @@ const connectionString = process.env.DATABASE_URL;
 let prisma: PrismaClient;
 
 if (connectionString) {
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
   const adapter = new PrismaPg(pool);
   prisma = new PrismaClient({ adapter });
 } else {
