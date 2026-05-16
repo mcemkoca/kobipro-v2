@@ -1,6 +1,5 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/lib/auth";
+import { getDemoUser } from "@/lib/auth";
 import DashboardLayout from "../components/DashboardLayout";
 import { Settings, Bell, Shield, Palette, Globe, CreditCard } from "lucide-react";
 import { cn } from "@kobipro/ui";
@@ -29,17 +28,17 @@ const settingSections = [
 ];
 
 export default async function SettingsPage() {
-  const user = await currentUser();
+  const user = await getDemoUser();
   if (!user) redirect("/login");
 
-  const role = await getUserRole();
-  const userName = user.firstName || user.username || user.emailAddresses[0]?.emailAddress || "User";
+  const userName = user.name;
+  const role = user.role;
 
   return (
     <DashboardLayout
       pageTitle="Ayarlar"
       breadcrumbs={[{ label: "Ayarlar" }]}
-      user={{ name: userName, email: user.emailAddresses[0]?.emailAddress || "", role }}
+      user={{ name: userName, email: user.email, role }}
     >
       <div className="max-w-2xl">
         {settingSections.map((section) => (
@@ -75,7 +74,7 @@ export default async function SettingsPage() {
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-sm font-semibold text-slate-200 mb-2">Hesap</h2>
           <p className="text-xs text-slate-500 mb-4">
-            {userName} · {user.emailAddresses[0]?.emailAddress}
+            {userName} · {user.email}
           </p>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 capitalize">

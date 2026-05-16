@@ -1,9 +1,8 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { isAdmin } from "@/lib/auth";
+import { getDemoUser, isAdmin } from "@/lib/auth";
 
 export default async function AdminPage() {
-  const user = await currentUser();
+  const user = await getDemoUser();
 
   if (!user) {
     redirect("/login");
@@ -14,6 +13,8 @@ export default async function AdminPage() {
   if (!admin) {
     redirect("/dashboard");
   }
+
+  const userName = user.name;
 
   return (
     <main className="flex-1 p-6 max-w-5xl mx-auto w-full">

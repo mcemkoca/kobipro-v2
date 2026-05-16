@@ -1,6 +1,5 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/lib/auth";
+import { getDemoUser } from "@/lib/auth";
 import DashboardLayout from "../components/DashboardLayout";
 import { UserCircle, Plus, Search, Phone, Mail, Shield } from "lucide-react";
 import { cn } from "@kobipro/ui";
@@ -20,17 +19,17 @@ const statusStyles: Record<string, string> = {
 };
 
 export default async function StaffPage() {
-  const user = await currentUser();
+  const user = await getDemoUser();
   if (!user) redirect("/login");
 
-  const role = await getUserRole();
-  const userName = user.firstName || user.username || user.emailAddresses[0]?.emailAddress || "User";
+  const userName = user.name;
+  const role = user.role;
 
   return (
     <DashboardLayout
       pageTitle="Personel"
       breadcrumbs={[{ label: "Personel" }]}
-      user={{ name: userName, email: user.emailAddresses[0]?.emailAddress || "", role }}
+      user={{ name: userName, email: user.email, role }}
     >
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

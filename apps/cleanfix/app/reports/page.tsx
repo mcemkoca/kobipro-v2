@@ -1,6 +1,5 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/lib/auth";
+import { getDemoUser } from "@/lib/auth";
 import DashboardLayout from "../components/DashboardLayout";
 import { BarChart3, Calendar, TrendingUp, Users, Receipt, Wrench } from "lucide-react";
 
@@ -14,17 +13,17 @@ const reportCards = [
 ];
 
 export default async function ReportsPage() {
-  const user = await currentUser();
+  const user = await getDemoUser();
   if (!user) redirect("/login");
 
-  const role = await getUserRole();
-  const userName = user.firstName || user.username || user.emailAddresses[0]?.emailAddress || "User";
+  const userName = user.name;
+  const role = user.role;
 
   return (
     <DashboardLayout
       pageTitle="Raporlar"
       breadcrumbs={[{ label: "Raporlar" }]}
-      user={{ name: userName, email: user.emailAddresses[0]?.emailAddress || "", role }}
+      user={{ name: userName, email: user.email, role }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {reportCards.map((report) => {
