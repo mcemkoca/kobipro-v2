@@ -1,8 +1,6 @@
-import {
-  ClerkProvider,
-} from "@clerk/nextjs";
-import type { Metadata } from "next";
+import { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "./components/AuthProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,19 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      appearance={{
-        variables: {
-          colorPrimary: "#18181b",
-          colorBackground: "#ffffff",
-          colorText: "#18181b",
-        },
-        layout: {
-          logoPlacement: "inside",
-          socialButtonsVariant: "iconButton",
-        },
-      }}
-    >
+    <AuthProvider>
       <html
         lang="tr"
         suppressHydrationWarning
@@ -48,6 +34,6 @@ export default function RootLayout({
           {children}
         </body>
       </html>
-    </ClerkProvider>
+    </AuthProvider>
   );
 }
