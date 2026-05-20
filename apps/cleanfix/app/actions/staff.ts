@@ -13,14 +13,26 @@ function isDbError(error: unknown): boolean {
   );
 }
 
+const demoStaff = [
+  { id: "stf_1", name: "Mehmet Kaya", email: "mehmet.kaya@cleanfix.com", phone: "0533 111 22 33", role: "EMPLOYEE", active: true, displayRole: "Teknisyen", displayStatus: "Aktif", jobs: 47, createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-05-20") },
+  { id: "stf_2", name: "Zeynep Demir", email: "zeynep.demir@cleanfix.com", phone: "0534 222 33 44", role: "EMPLOYEE", active: true, displayRole: "Teknisyen", displayStatus: "Aktif", jobs: 38, createdAt: new Date("2026-01-15"), updatedAt: new Date("2026-05-20") },
+  { id: "stf_3", name: "Ali Can", email: "ali.can@cleanfix.com", phone: "0535 333 44 55", role: "MANAGER", active: true, displayRole: "Sorumlu", displayStatus: "Aktif", jobs: 12, createdAt: new Date("2025-11-01"), updatedAt: new Date("2026-05-20") },
+  { id: "stf_4", name: "Selin Yıldız", email: "selin.yildiz@cleanfix.com", phone: "0536 444 55 66", role: "EMPLOYEE", active: true, displayRole: "Teknisyen", displayStatus: "Aktif", jobs: 31, createdAt: new Date("2026-02-01"), updatedAt: new Date("2026-05-18") },
+  { id: "stf_5", name: "Can Özkan", email: "can.ozkan@cleanfix.com", phone: "0537 555 66 77", role: "EMPLOYEE", active: false, displayRole: "Teknisyen", displayStatus: "İzinli", jobs: 0, createdAt: new Date("2026-03-01"), updatedAt: new Date("2026-05-15") },
+  { id: "stf_6", name: "Elif Şen", email: "elif.sen@cleanfix.com", phone: "0538 666 77 88", role: "ADMIN", active: true, displayRole: "Yönetici", displayStatus: "Aktif", jobs: 0, createdAt: new Date("2025-08-01"), updatedAt: new Date("2026-05-20") },
+  { id: "stf_7", name: "Berk Arslan", email: "berk.arslan@cleanfix.com", phone: "0539 777 88 99", role: "EMPLOYEE", active: true, displayRole: "Teknisyen", displayStatus: "Aktif", jobs: 22, createdAt: new Date("2026-04-01"), updatedAt: new Date("2026-05-19") },
+  { id: "stf_8", name: "Dilara Koç", email: "dilara.koc@cleanfix.com", phone: "0540 888 99 00", role: "EMPLOYEE", active: false, displayRole: "Teknisyen", displayStatus: "Pasif", jobs: 8, createdAt: new Date("2026-02-15"), updatedAt: new Date("2026-04-30") },
+];
+
 export async function getStaff() {
   try {
     const staff = await prisma.staff.findMany({
       orderBy: { createdAt: "desc" },
     });
+    if (staff.length === 0) return { success: true, data: demoStaff };
     return { success: true, data: staff };
   } catch (error) {
-    if (isDbError(error)) return { success: true, data: [] };
+    if (isDbError(error)) return { success: true, data: demoStaff };
     return { success: false, error: "Personel yüklenirken hata oluştu" };
   }
 }
