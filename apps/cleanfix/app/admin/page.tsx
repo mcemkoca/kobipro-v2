@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getDemoUser, isAdmin } from "@/lib/auth";
 import DashboardLayout from "../components/DashboardLayout";
-import { getAdminStats, getUsers, updateUserRole, toggleUserStatus } from "../actions/admin";
+import { getAdminStats, getUsers, updateUserRole } from "../actions/admin";
 import { getBookings } from "../actions/bookings";
 import { getInvoices } from "../actions/invoices";
 import { getCustomers } from "../actions/customers";
@@ -35,12 +35,6 @@ async function handleRoleChange(formData: FormData) {
   const id = formData.get("id") as string;
   const role = formData.get("role") as string;
   if (id && role) await updateUserRole(id, role);
-}
-
-async function handleToggleUser(formData: FormData) {
-  "use server";
-  const id = formData.get("id") as string;
-  if (id) await toggleUserStatus(id);
 }
 
 /* ---------- Helpers ---------- */
@@ -118,7 +112,6 @@ export default async function AdminPage() {
   const adminUsers = users.filter((u: any) => u.role === "ADMIN" || u.role === "MANAGER");
   const employeeUsers = users.filter((u: any) => u.role === "EMPLOYEE");
   const customerUsers = users.filter((u: any) => u.role === "CUSTOMER");
-  const activeUsers = users.filter((u: any) => u.active !== false).length;
 
   /* Module cards data */
   const modules = [
@@ -137,7 +130,7 @@ export default async function AdminPage() {
         <StatCard label="Toplam Gelir" value={formatCurrency(totalRevenue)} icon={Banknote} iconColor="text-emerald-400" bg="bg-emerald-500/10" sub={`${invoices.filter((i: any) => i.status === "PAID").length} ödenmiş fatura`} />
         <StatCard label="Bekleyen Tahsilat" value={formatCurrency(pendingRevenue)} icon={Receipt} iconColor="text-amber-400" bg="bg-amber-500/10" sub={`${overdueCount} gecikmiş`} />
         <StatCard label="Aktif Randevu" value={activeBookings.toString()} icon={CalendarDays} iconColor="text-blue-400" bg="bg-blue-500/10" sub={`${completedBookings} tamamlandı, ${cancelledBookings} iptal`} />
-        <StatCard label="Toplam Kullanıcı" value={users.length.toString()} icon={Users} iconColor="text-purple-400" bg="bg-purple-500/10" sub={`${activeUsers} aktif`} />
+        <StatCard label="Toplam Kullanıcı" value={users.length.toString()} icon={Users} iconColor="text-purple-400" bg="bg-purple-500/10" sub={`${users.length} toplam`} />
       </div>
 
       {/* Module Quick Access */}
@@ -179,8 +172,7 @@ export default async function AdminPage() {
               Kullanıcı Yönetimi
             </h2>
             <div className="flex items-center gap-3 text-xs text-slate-500">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />{activeUsers} aktif</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-500" />{users.length - activeUsers} pasif</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />{users.length} toplam</span>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -189,9 +181,8 @@ export default async function AdminPage() {
                 <tr className="text-left text-xs text-slate-500 uppercase tracking-wider">
                   <th className="px-5 py-3 font-medium">Kullanıcı</th>
                   <th className="px-5 py-3 font-medium">Rol</th>
-                  <th className="px-5 py-3 font-medium">Durum</th>
                   <th className="px-5 py-3 font-medium">Kayıt Tarihi</th>
-                  <th className="px-5 py-3 font-medium text-right">İşlemler</th>
+                  <th className="px-5 py-3 font-medium text-right">Etiket</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
@@ -217,14 +208,6 @@ export default async function AdminPage() {
                           <option value="EMPLOYEE">Personel</option>
                           <option value="CUSTOMER">Müşteri</option>
                         </select>
-                      </form>
-                    </td>
-                    <td className="px-5 py-3">
-                      <form action={handleToggleUser} className="inline-flex">
-                        <input type="hidden" name="id" value={u.id} />
-                        <button type="submit" className={cn("inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer", u.active !== false ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20")}>
-                          {u.active !== false ? "Aktif" : "Pasif"}
-                        </button>
                       </form>
                     </td>
                     <td className="px-5 py-3 text-slate-400 text-xs">{formatDate(u.createdAt)}</td>
