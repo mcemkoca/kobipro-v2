@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { UserPlus, Mail, Lock, User, ArrowRight, AlertCircle } from "lucide-react";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function signUpAction(formData: FormData) {
   "use server";
@@ -14,13 +15,23 @@ async function signUpAction(formData: FormData) {
     redirect("/sign-up?error=invalid");
   }
 
+  if (password.length < 8) {
+    redirect("/sign-up?error=weak");
+  }
+
+  const limit = await rateLimit(`signup:${email}`);
+  if (!limit.allowed) {
+    redirect("/sign-up?error=rate-limit");
+  }
+
   const user = { name, email, role: "CUSTOMER" };
   const cookieStore = await cookies();
   cookieStore.set("demo_login", encodeURIComponent(JSON.stringify(user)), {
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: 60 * 60 * 2,
     httpOnly: true,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   });
   redirect("/dashboard");
 }
@@ -32,6 +43,8 @@ interface SignUpPageProps {
 export default async function SignUpPage({ searchParams }: SignUpPageProps) {
   const params = await searchParams;
   const hasError = params?.error === "invalid";
+  const weakPassword = params?.error === "weak";
+  const rateLimited = params?.error === "rate-limit";
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950">
@@ -55,6 +68,20 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
             <div className="flex items-start gap-2.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3">
               <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-400" />
               <p className="text-sm text-rose-300">Lütfen tüm alanları doldurun ve şifrelerin eşleştiğinden emin olun.</p>
+            </div>
+          )}
+
+          {weakPassword && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-400" />
+              <p className="text-sm text-amber-300">Şifre en az 8 karakter olmalı.</p>
+            </div>
+          )}
+
+          {rateLimited && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-400" />
+              <p className="text-sm text-amber-300">Çok fazla deneme. Lütfen 15 dakika sonra tekrar deneyin.</p>
             </div>
           )}
 

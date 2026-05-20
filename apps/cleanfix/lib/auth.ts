@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { rateLimit } from "@/lib/rate-limit";
 
 const DEMO_COOKIE = "demo_login";
 

@@ -2,23 +2,34 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { LogIn, Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function loginAction(formData: FormData) {
   "use server";
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;
 
-  const ADMIN_EMAIL = "mcemkoca0@gmail.com";
-  const ADMIN_PASSWORD = "admin123";
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "mcemkoca0@gmail.com";
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+
+  if (!email || !password) {
+    redirect("/login?error=invalid");
+  }
+
+  const limit = await rateLimit(`login:${email}`);
+  if (!limit.allowed) {
+    redirect("/login?error=rate-limit");
+  }
 
   if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     const user = { name: "Admin", email: ADMIN_EMAIL, role: "ADMIN" };
     const cookieStore = await cookies();
     cookieStore.set("demo_login", encodeURIComponent(JSON.stringify(user)), {
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 2,
       httpOnly: true,
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
     redirect("/dashboard");
   }
@@ -33,6 +44,7 @@ interface LoginPageProps {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const hasError = params?.error === "invalid";
+  const rateLimited = params?.error === "rate-limit";
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950">
@@ -56,6 +68,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <div className="flex items-start gap-2.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3">
               <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-400" />
               <p className="text-sm text-rose-300">E-posta veya şifre hatalı.</p>
+            </div>
+          )}
+
+          {rateLimited && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-400" />
+              <p className="text-sm text-amber-300">Çok fazla deneme. Lütfen 15 dakika sonra tekrar deneyin.</p>
             </div>
           )}
 
