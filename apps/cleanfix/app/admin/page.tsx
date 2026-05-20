@@ -96,10 +96,10 @@ export default async function AdminPage() {
     getServices(),
   ]);
 
-  const stats = statsRes.success ? statsRes.data : { staffCount: 0, customerCount: 0, bookingCount: 0, invoiceCount: 0, serviceCount: 0 };
-  const users = usersRes.success ? (usersRes.data || []) : [];
-  const bookings = bookingsRes.success ? (bookingsRes.data || []) : [];
-  const invoices = invoicesRes.success ? (invoicesRes.data || []) : [];
+  const stats = statsRes.success && statsRes.data ? statsRes.data : { staffCount: 0, customerCount: 0, bookingCount: 0, invoiceCount: 0, serviceCount: 0 };
+  const users = usersRes.success && usersRes.data ? usersRes.data : [];
+  const bookings = bookingsRes.success && bookingsRes.data ? bookingsRes.data : [];
+  const invoices = invoicesRes.success && invoicesRes.data ? invoicesRes.data : [];
 
   const totalRevenue = invoices.filter((i: any) => i.status === "PAID").reduce((sum: number, i: any) => sum + Number(i.total ?? i.amount ?? 0), 0);
   const pendingRevenue = invoices.filter((i: any) => i.status !== "PAID" && i.status !== "CANCELLED").reduce((sum: number, i: any) => sum + Number(i.total ?? i.amount ?? 0), 0);
