@@ -15,8 +15,37 @@ import {
   Scissors,
   Car,
   HeartPulse,
+  LogOut,
+  User,
 } from "lucide-react";
 import { cn } from "@kobipro/ui";
+
+const GRADIENTS = [
+  { from: "from-rose-500", to: "to-orange-400" },
+  { from: "from-amber-500", to: "to-yellow-400" },
+  { from: "from-emerald-500", to: "to-teal-400" },
+  { from: "from-cyan-500", to: "to-blue-400" },
+  { from: "from-blue-500", to: "to-indigo-400" },
+  { from: "from-violet-500", to: "to-purple-400" },
+  { from: "from-fuchsia-500", to: "to-pink-400" },
+  { from: "from-lime-500", to: "to-green-400" },
+];
+
+function hashString(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = str.charCodeAt(i) + ((h << 5) - h);
+  }
+  return Math.abs(h);
+}
+
+function getGradient(str: string) {
+  return GRADIENTS[hashString(str) % GRADIENTS.length];
+}
+
+function getInitials(name: string) {
+  return name.split(/\s+/).map((n) => n.charAt(0)).slice(0, 2).join("").toUpperCase();
+}
 
 const sectors = [
   { name: "CleanFix", slug: "cleanfix", tag: "Temizlik", icon: Paintbrush, href: "/dashboard", color: "text-emerald-400", active: true },
@@ -30,11 +59,19 @@ interface HeaderProps {
   pageTitle: string;
   onMenuToggle?: () => void;
   breadcrumbs?: { label: string; href?: string }[];
+  user?: {
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
+  };
+  onLogout?: () => void;
 }
 
-export default function Header({ pageTitle, onMenuToggle, breadcrumbs }: HeaderProps) {
+export default function Header({ pageTitle, onMenuToggle, breadcrumbs, user, onLogout }: HeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [sectorOpen, setSectorOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const currentSector = sectors.find(s => pathname?.startsWith(`/${s.slug}`)) || sectors[0];
 
@@ -108,7 +145,7 @@ export default function Header({ pageTitle, onMenuToggle, breadcrumbs }: HeaderP
         </div>
 
         <div>
-          <h1 className="text-lg font-semibold text-slate-100 tracking-tight">
+          <h1 className="text-lg font-semibold text-slate-100 tracking-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-none">
             {pageTitle}
           </h1>
           {/* Breadcrumb */}
@@ -169,6 +206,96 @@ export default function Header({ pageTitle, onMenuToggle, breadcrumbs }: HeaderP
           <Bell size={18} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-slate-950" />
         </button>
+
+        {/* User Dropdown */}
+        {user && (
+          <div className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              <div
+                className={cn(
+                  "w-8 h-8 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-xs font-bold shadow-md",
+                  getGradient(user.name + user.email).from,
+                  getGradient(user.name + user.email).to
+                )}
+              >
+                {getInitials(user.name)}
+              </div>
+              <ChevronDown size={14} className={cn("text-slate-500 transition-transform", userMenuOpen && "rotate-180")} />
+            </button>
+
+            {userMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                <div className="absolute top-full right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-xl shadow-black/20 z-50 overflow-hidden">
+                  <div className="p-4 border-b border-slate-800">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-sm font-bold shadow-md",
+                          getGradient(user.name + user.email).from,
+                          getGradient(user.name + user.email).to
+                        )}
+                      >
+                        {getInitials(user.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-200 truncate">{user.name}</p>
+                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    <span className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium border mt-2",
+                      user.role === "ADMIN"
+                        ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                        : user.role === "MANAGER"
+                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        : user.role === "CUSTOMER"
+                        ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                        : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    )}>
+                      {user.role === "ADMIN" ? "Admin" : user.role === "MANAGER" ? "Yönetici" : user.role === "CUSTOMER" ? "Müşteri" : "Çalışan"}
+                    </span>
+                  </div>
+                  <div className="p-1">
+                    {user.role === "CUSTOMER" && (
+                      <Link
+                        href="/customer-portal"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+                      >
+                        <User size={16} />
+                        Profilim
+                      </Link>
+                    )}
+                    {(user.role === "EMPLOYEE" || user.role === "MANAGER" || user.role === "ADMIN") && (
+                      <Link
+                        href="/employee"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+                      >
+                        <User size={16} />
+                        Profilim
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        onLogout?.();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    >
+                      <LogOut size={16} />
+                      Çıkış Yap
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

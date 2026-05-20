@@ -3,106 +3,6 @@
 import { prisma } from "@kobipro/db";
 import { revalidatePath } from "next/cache";
 
-// Demo data fallback when database is unavailable
-const DEMO_INVOICES = [
-  {
-    id: "F-1024",
-    customerId: "cust-1",
-    amount: 450,
-    customer: { id: "cust-1", name: "Ahmet Yılmaz", email: "ahmet@email.com", phone: "+905551234567", address: "Kadıköy, İstanbul", notes: "VIP müşteri", createdAt: new Date("2025-01-10"), updatedAt: new Date("2025-01-10") },
-    dueDate: new Date("2025-06-17"),
-    status: "PAID" as const,
-    paidDate: new Date("2025-05-17"),
-    createdAt: new Date("2025-05-17"),
-    updatedAt: new Date("2025-05-17"),
-    items: [
-      { id: "item-1", service: "Ev Temizliği", quantity: 1, unitPrice: 450, total: 450 },
-    ],
-    number: "F-1024",
-    notes: "Ev Temizliği",
-  },
-  {
-    id: "F-1023",
-    customerId: "cust-2",
-    amount: 1200,
-    customer: { id: "cust-2", name: "Ayşe Kaya", email: "elif@email.com", phone: "+905552345678", address: "Beşiktaş, İstanbul", notes: "", createdAt: new Date("2025-01-15"), updatedAt: new Date("2025-01-15") },
-    dueDate: new Date("2025-06-17"),
-    status: "SENT" as const,
-    paidDate: null,
-    createdAt: new Date("2025-05-17"),
-    updatedAt: new Date("2025-05-17"),
-    items: [
-      { id: "item-2", service: "Ofis Temizliği", quantity: 1, unitPrice: 1200, total: 1200 },
-    ],
-    number: "F-1023",
-    notes: "Ofis Temizliği",
-  },
-  {
-    id: "F-1022",
-    customerId: "cust-3",
-    amount: 320,
-    customer: { id: "cust-3", name: "Mehmet Demir", email: "mehmet@email.com", phone: "+905553456789", address: "Şişli, İstanbul", notes: "Haftalık temizlik", createdAt: new Date("2025-02-01"), updatedAt: new Date("2025-02-01") },
-    dueDate: new Date("2025-06-16"),
-    status: "PAID" as const,
-    paidDate: new Date("2025-05-16"),
-    createdAt: new Date("2025-05-16"),
-    updatedAt: new Date("2025-05-16"),
-    items: [
-      { id: "item-3", service: "Halı Yıkama", quantity: 1, unitPrice: 320, total: 320 },
-    ],
-    number: "F-1022",
-    notes: "Halı Yıkama",
-  },
-  {
-    id: "F-1021",
-    customerId: "cust-4",
-    amount: 280,
-    customer: { id: "cust-4", name: "Fatma Şahin", email: "selen@email.com", phone: "+905554567890", address: "Üsküdar, İstanbul", notes: "", createdAt: new Date("2025-02-15"), updatedAt: new Date("2025-02-15") },
-    dueDate: new Date("2025-06-16"),
-    status: "OVERDUE" as const,
-    paidDate: null,
-    createdAt: new Date("2025-05-16"),
-    updatedAt: new Date("2025-05-16"),
-    items: [
-      { id: "item-4", service: "Koltuk Yıkama", quantity: 1, unitPrice: 280, total: 280 },
-    ],
-    number: "F-1021",
-    notes: "Koltuk Yıkama",
-  },
-  {
-    id: "F-1020",
-    customerId: "cust-5",
-    amount: 2100,
-    customer: { id: "cust-5", name: "Ali Can", email: "burak@email.com", phone: "+905555678901", address: "Ataşehir, İstanbul", notes: "İki kedisi var", createdAt: new Date("2025-03-01"), updatedAt: new Date("2025-03-01") },
-    dueDate: new Date("2025-06-15"),
-    status: "PAID" as const,
-    paidDate: new Date("2025-05-15"),
-    createdAt: new Date("2025-05-15"),
-    updatedAt: new Date("2025-05-15"),
-    items: [
-      { id: "item-5", service: "Dış Cephe Temizliği", quantity: 1, unitPrice: 2100, total: 2100 },
-    ],
-    number: "F-1020",
-    notes: "Dış Cephe",
-  },
-  {
-    id: "F-1019",
-    customerId: "cust-1",
-    amount: 500,
-    customer: { id: "cust-1", name: "Zeynep Arslan", email: "ahmet@email.com", phone: "+905551234567", address: "Kadıköy, İstanbul", notes: "VIP müşteri", createdAt: new Date("2025-01-10"), updatedAt: new Date("2025-01-10") },
-    dueDate: new Date("2025-06-15"),
-    status: "DRAFT" as const,
-    paidDate: null,
-    createdAt: new Date("2025-05-15"),
-    updatedAt: new Date("2025-05-15"),
-    items: [
-      { id: "item-6", service: "Ev Temizliği", quantity: 1, unitPrice: 500, total: 500 },
-    ],
-    number: "F-1019",
-    notes: "Ev Temizliği",
-  },
-];
-
 function isDbError(error: unknown): boolean {
   return error instanceof Error && (
     error.message.includes("connect") ||
@@ -131,7 +31,7 @@ export async function getInvoices() {
     }));
     return { success: true, data: enriched };
   } catch (error) {
-    if (isDbError(error)) return { success: true, data: DEMO_INVOICES };
+    if (isDbError(error)) return { success: true, data: [] };
     return { success: false, error: "Faturalar yüklenirken hata oluştu" };
   }
 }
@@ -154,10 +54,7 @@ export async function getInvoiceById(id: string) {
     };
     return { success: true, data: enriched };
   } catch (error) {
-    if (isDbError(error)) {
-      const inv = DEMO_INVOICES.find(i => i.id === id);
-      return { success: true, data: inv || null };
-    }
+    if (isDbError(error)) return { success: true, data: null };
     return { success: false, error: "Fatura bulunurken hata oluştu" };
   }
 }
@@ -277,14 +174,22 @@ export async function updateInvoice(
     return { success: true, data: enriched };
   } catch (error) {
     if (isDbError(error)) {
-      const existing = DEMO_INVOICES.find(i => i.id === id);
-      const items = data.items || existing?.items || [];
-      const mock = { ...(existing || DEMO_INVOICES[0]), ...data, items, updatedAt: new Date() };
-      if (data.dueDate) mock.dueDate = new Date(data.dueDate);
-      if (data.status) {
-        mock.status = data.status as any;
-        mock.paidDate = data.status === "PAID" ? new Date() : null;
-      }
+      const items = data.items || [{ id: `item-${Date.now()}`, service: "Hizmet", quantity: 1, unitPrice: data.total || 0, total: data.total || 0 }];
+      const mock = {
+        id,
+        customerId: data.customerId || "",
+        amount: data.total || 0,
+        number: data.number || id,
+        dueDate: data.dueDate ? new Date(data.dueDate) : new Date(),
+        status: (data.status as any) || "DRAFT",
+        paidDate: data.status === "PAID" ? new Date() : null,
+        notes: data.notes || null,
+        total: data.total || 0,
+        items,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        customer: { id: data.customerId || "", name: "Müşteri", email: null, phone: null, address: null, notes: null, createdAt: new Date(), updatedAt: new Date() },
+      };
       return { success: true, data: mock };
     }
     return { success: false, error: "Fatura güncellenirken hata oluştu" };
@@ -305,9 +210,7 @@ export async function updateInvoiceStatus(id: string, status: string) {
     return { success: true, data: invoice };
   } catch (error) {
     if (isDbError(error)) {
-      const existing = DEMO_INVOICES.find(i => i.id === id);
-      const mock = existing ? { ...existing, status, paidDate: status === "PAID" ? new Date() : null, updatedAt: new Date() } : null;
-      return { success: true, data: mock };
+      return { success: false, error: "Durum güncellenirken hata oluştu" };
     }
     return { success: false, error: "Durum güncellenirken hata oluştu" };
   }

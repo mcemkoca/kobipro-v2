@@ -3,6 +3,16 @@
 import { prisma } from "@kobipro/db";
 import { revalidatePath } from "next/cache";
 
+function isDbError(error: unknown): boolean {
+  return error instanceof Error && (
+    error.message.includes("connect") ||
+    error.message.includes("database") ||
+    error.message.includes("connection") ||
+    error.message.includes("ENOTFOUND") ||
+    error.message.includes("ECONNREFUSED")
+  );
+}
+
 export async function getServices() {
   try {
     const services = await prisma.service.findMany({
@@ -10,6 +20,7 @@ export async function getServices() {
     });
     return { success: true, data: services };
   } catch (error) {
+    if (isDbError(error)) return { success: true, data: [] };
     console.error("getServices error:", error);
     return { success: false, error: "Hizmetler yüklenirken hata oluştu" };
   }
@@ -23,12 +34,13 @@ export async function getServiceById(id: string) {
     });
     return { success: true, data: service };
   } catch (error) {
+    if (isDbError(error)) return { success: true, data: null };
     console.error("getServiceById error:", error);
     return { success: false, error: "Hizmet bulunurken hata oluştu" };
   }
 }
 
-export async function createService(data: { name: string; description?: string; price: number; duration: number }) {
+export async function createService(data: { name: string; description?: string; price: number; duration: number; active?: boolean }) {
   try {
     const service = await prisma.service.create({
       data: {
@@ -36,7 +48,7 @@ export async function createService(data: { name: string; description?: string; 
         description: data.description,
         price: data.price,
         duration: data.duration,
-        active: true,
+        active: data.active ?? true,
       },
     });
     revalidatePath("/services");

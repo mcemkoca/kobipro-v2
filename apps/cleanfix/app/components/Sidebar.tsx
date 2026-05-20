@@ -20,14 +20,16 @@ import {
 import { cn } from "@kobipro/ui";
 
 const allNavItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
-  { name: "Randevular", href: "/bookings", icon: CalendarDays, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
-  { name: "Müşteriler", href: "/customers", icon: Users, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
-  { name: "Hizmetler", href: "/services", icon: Wrench, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
-  { name: "Personel", href: "/staff", icon: UserCircle, roles: ["ADMIN", "MANAGER", "TECHNICIAN"] },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN", "EMPLOYEE"] },
+  { name: "Randevular", href: "/bookings", icon: CalendarDays, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN", "EMPLOYEE"] },
+  { name: "Müşteriler", href: "/customers", icon: Users, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN", "EMPLOYEE"] },
+  { name: "Hizmetler", href: "/services", icon: Wrench, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN", "EMPLOYEE"] },
+  { name: "Personel", href: "/staff", icon: UserCircle, roles: ["ADMIN", "MANAGER", "TECHNICIAN", "EMPLOYEE"] },
   { name: "Faturalar", href: "/invoices", icon: FileText, roles: ["ADMIN", "MANAGER"] },
   { name: "Raporlar", href: "/reports", icon: BarChart3, roles: ["ADMIN", "MANAGER"] },
-  { name: "Ayarlar", href: "/settings", icon: Settings, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN"] },
+  { name: "Müşteri Portalı", href: "/customer-portal", icon: Users, roles: ["CUSTOMER"] },
+  { name: "Çalışan Profili", href: "/employee", icon: UserCircle, roles: ["EMPLOYEE", "MANAGER", "ADMIN"] },
+  { name: "Ayarlar", href: "/settings", icon: Settings, roles: ["ADMIN", "MANAGER", "CUSTOMER", "TECHNICIAN", "EMPLOYEE"] },
 ];
 
 interface SidebarProps {

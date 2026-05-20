@@ -3,88 +3,6 @@
 import { prisma } from "@kobipro/db";
 import { revalidatePath } from "next/cache";
 
-// Demo data fallback when database is unavailable
-const DEMO_STAFF = [
-  {
-    id: "P-01",
-    name: "Ali Korkmaz",
-    email: "ali@cleanfix.com",
-    phone: "+905321112233",
-    role: "EMPLOYEE" as const,
-    displayRole: "Teknisyen",
-    status: "ACTIVE" as const,
-    displayStatus: "Aktif",
-    jobs: 45,
-    createdAt: new Date("2025-01-10"),
-    updatedAt: new Date("2025-01-10"),
-  },
-  {
-    id: "P-02",
-    name: "Merve Toprak",
-    email: "merve@cleanfix.com",
-    phone: "+905332223344",
-    role: "MANAGER" as const,
-    displayRole: "Sorumlu",
-    status: "ACTIVE" as const,
-    displayStatus: "Aktif",
-    jobs: 67,
-    createdAt: new Date("2025-01-15"),
-    updatedAt: new Date("2025-01-15"),
-  },
-  {
-    id: "P-03",
-    name: "Burak Şahin",
-    email: "burak@cleanfix.com",
-    phone: "+905353334455",
-    role: "EMPLOYEE" as const,
-    displayRole: "Teknisyen",
-    status: "LEAVE" as const,
-    displayStatus: "İzinli",
-    jobs: 38,
-    createdAt: new Date("2025-02-01"),
-    updatedAt: new Date("2025-02-01"),
-  },
-  {
-    id: "P-04",
-    name: "Deniz Yıldız",
-    email: "deniz@cleanfix.com",
-    phone: "+905364445566",
-    role: "EMPLOYEE" as const,
-    displayRole: "Teknisyen",
-    status: "ACTIVE" as const,
-    displayStatus: "Aktif",
-    jobs: 52,
-    createdAt: new Date("2025-02-10"),
-    updatedAt: new Date("2025-02-10"),
-  },
-  {
-    id: "P-05",
-    name: "Can Özdemir",
-    email: "can@cleanfix.com",
-    phone: "+905375556677",
-    role: "ADMIN" as const,
-    displayRole: "Yönetici",
-    status: "ACTIVE" as const,
-    displayStatus: "Aktif",
-    jobs: 0,
-    createdAt: new Date("2025-03-01"),
-    updatedAt: new Date("2025-03-01"),
-  },
-  {
-    id: "P-06",
-    name: "Selin Koç",
-    email: "selin@cleanfix.com",
-    phone: "+905386667788",
-    role: "EMPLOYEE" as const,
-    displayRole: "Teknisyen",
-    status: "ACTIVE" as const,
-    displayStatus: "Aktif",
-    jobs: 41,
-    createdAt: new Date("2025-03-10"),
-    updatedAt: new Date("2025-03-10"),
-  },
-];
-
 function isDbError(error: unknown): boolean {
   return error instanceof Error && (
     error.message.includes("connect") ||
@@ -102,7 +20,7 @@ export async function getStaff() {
     });
     return { success: true, data: staff };
   } catch (error) {
-    if (isDbError(error)) return { success: true, data: DEMO_STAFF };
+    if (isDbError(error)) return { success: true, data: [] };
     return { success: false, error: "Personel yüklenirken hata oluştu" };
   }
 }
@@ -114,10 +32,7 @@ export async function getStaffById(id: string) {
     });
     return { success: true, data: staff };
   } catch (error) {
-    if (isDbError(error)) {
-      const s = DEMO_STAFF.find(s => s.id === id);
-      return { success: true, data: s || null };
-    }
+    if (isDbError(error)) return { success: true, data: null };
     return { success: false, error: "Personel bulunurken hata oluştu" };
   }
 }
@@ -202,7 +117,6 @@ export async function updateStaff(
     return { success: true, data: staff };
   } catch (error) {
     if (isDbError(error)) {
-      const existing = DEMO_STAFF.find(s => s.id === id);
       const roleMap: Record<string, string> = {
         "Teknisyen": "EMPLOYEE",
         "Sorumlu": "MANAGER",
@@ -214,12 +128,16 @@ export async function updateStaff(
         "Pasif": "INACTIVE",
       };
       const mock = {
-        ...(existing || DEMO_STAFF[0]),
-        ...data,
-        role: data.role ? (roleMap[data.role] || existing?.role || "EMPLOYEE") as any : (existing?.role || "EMPLOYEE"),
-        displayRole: data.role || existing?.displayRole || "Teknisyen",
-        status: data.status ? (statusMap[data.status] || "ACTIVE") as any : (existing?.status || "ACTIVE"),
-        displayStatus: data.status || existing?.displayStatus || "Aktif",
+        id,
+        name: data.name || "Personel",
+        email: data.email || `${Date.now()}@demo.local`,
+        phone: data.phone || null,
+        role: data.role ? (roleMap[data.role] || "EMPLOYEE") as any : "EMPLOYEE",
+        displayRole: data.role || "Teknisyen",
+        status: data.status ? (statusMap[data.status] || "ACTIVE") as any : "ACTIVE",
+        displayStatus: data.status || "Aktif",
+        jobs: data.jobs || 0,
+        createdAt: new Date(),
         updatedAt: new Date(),
       };
       return { success: true, data: mock };
@@ -242,16 +160,7 @@ export async function toggleStaffStatus(id: string) {
     return { success: true, data: updated };
   } catch (error) {
     if (isDbError(error)) {
-      const existing = DEMO_STAFF.find(s => s.id === id);
-      if (!existing) return { success: false, error: "Personel bulunamadı" };
-      const newStatus = existing.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-      const mock = {
-        ...existing,
-        status: newStatus as any,
-        displayStatus: newStatus === "ACTIVE" ? "Aktif" : "Pasif",
-        updatedAt: new Date(),
-      };
-      return { success: true, data: mock };
+      return { success: false, error: "Durum değiştirilirken hata oluştu" };
     }
     return { success: false, error: "Durum değiştirilirken hata oluştu" };
   }

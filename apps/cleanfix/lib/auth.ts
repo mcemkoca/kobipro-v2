@@ -10,12 +10,6 @@ export interface DemoUser {
   role: string;
 }
 
-const DEFAULT_USER: DemoUser = {
-  name: "Demo User",
-  email: "demo@cleanfix.com",
-  role: "ADMIN",
-};
-
 export async function getDemoUser(): Promise<DemoUser | null> {
   const cookieStore = await cookies();
   const raw = cookieStore.get(DEMO_COOKIE)?.value;
@@ -30,7 +24,6 @@ export async function getDemoUser(): Promise<DemoUser | null> {
 export async function requireAuth(): Promise<DemoUser> {
   const user = await getDemoUser();
   if (!user) {
-    // Let caller handle redirect — this is a server helper
     throw new Error("UNAUTHENTICATED");
   }
   return user;
@@ -54,4 +47,10 @@ export async function isManager(): Promise<boolean> {
 export async function hasRole(allowedRoles: string[]): Promise<boolean> {
   const role = await getUserRole();
   return allowedRoles.includes(role);
+}
+
+export async function logoutAction() {
+  "use server";
+  const cookieStore = await cookies();
+  cookieStore.delete(DEMO_COOKIE);
 }

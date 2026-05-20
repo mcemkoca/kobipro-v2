@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Wrench } from "lucide-react";
-import { ServiceForm, ServiceFormData } from "./ServiceForm";
+import { ServiceForm } from "./ServiceForm";
 import { ServiceModal } from "./ServiceModal";
-import { createService, updateService, deleteService, toggleServiceStatus } from "@/app/actions/services";
+import { updateService, deleteService, toggleServiceStatus } from "@/app/actions/services";
 import { EmptyState } from "@/app/components/ui/EmptyState";
 import { ToastContainer } from "@/app/components/ui/Toast";
 import { useToast } from "@/app/components/ui/useToast";
 import { Button } from "@kobipro/ui";
+import Link from "next/link";
 
 interface Service {
   id: string;
@@ -27,7 +28,6 @@ interface ServiceListProps {
 
 export function ServiceList({ services, onRefresh }: ServiceListProps) {
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const { toasts, addToast, removeToast } = useToast();
 
@@ -61,7 +61,11 @@ export function ServiceList({ services, onRefresh }: ServiceListProps) {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-slate-100">Hizmetler</h2>
-        <Button onClick={() => setIsCreateModalOpen(true)}>+ Yeni Hizmet</Button>
+        <div className="flex items-center gap-2">
+          <Link href="/services/new">
+            <Button>+ Yeni Hizmet</Button>
+          </Link>
+        </div>
       </div>
 
       {services.length === 0 ? (
@@ -70,7 +74,7 @@ export function ServiceList({ services, onRefresh }: ServiceListProps) {
           title="Henüz hizmet yok"
           description="İlk hizmet eklemek için + butonuna tıklayın"
           actionLabel="Yeni Hizmet Ekle"
-          onAction={() => setIsCreateModalOpen(true)}
+          onAction={() => window.location.href = "/services/new"}
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
@@ -129,23 +133,6 @@ export function ServiceList({ services, onRefresh }: ServiceListProps) {
             </tbody>
           </table>
         </div>
-      )}
-
-      {isCreateModalOpen && (
-        <ServiceModal title="Yeni Hizmet" onClose={() => setIsCreateModalOpen(false)}>
-          <ServiceForm
-            onSubmit={async (data) => {
-              const result = await createService(data);
-              if (result.success) {
-                setIsCreateModalOpen(false);
-                addToast("Hizmet kaydedildi", "success");
-                onRefresh();
-              } else {
-                addToast(result.error || "Kaydedilirken hata oluştu", "error");
-              }
-            }}
-          />
-        </ServiceModal>
       )}
 
       {editingService && (

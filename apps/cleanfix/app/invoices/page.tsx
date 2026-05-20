@@ -1,31 +1,109 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { getInvoices } from "@/app/actions/invoices";
+import { getCustomers } from "@/app/actions/customers";
 import { getDemoUser, hasRole } from "@/lib/auth";
-import DashboardLayout from "../components/DashboardLayout";
-import { EmptyState } from "../components/ui/EmptyState";
-import { FileText, Plus, Search, Calendar, Download, Shield } from "lucide-react";
-import { cn } from "@kobipro/ui";
+import { InvoiceList } from "@/app/components/invoices/InvoiceList";
+import { SkeletonTable } from "@/app/components/ui/SkeletonTable";
+import { ErrorState } from "@/app/components/ui/ErrorState";
+import { EmptyState } from "@/app/components/ui/EmptyState";
+import DashboardLayout from "@/app/components/DashboardLayout";
+import { FileText, Shield } from "lucide-react";
 
-const invoices = [
-  { id: "F-1024", customer: "Ahmet Yılmaz", date: "17 May 2025", dueDate: "17 Haz 2025", amount: "₺450", status: "Ödendi" },
-  { id: "F-1023", customer: "Ayşe Kaya", date: "17 May 2025", dueDate: "17 Haz 2025", amount: "₺1,200", status: "Ödenmedi" },
-  { id: "F-1022", customer: "Mehmet Demir", date: "16 May 2025", dueDate: "16 Haz 2025", amount: "₺320", status: "Ödendi" },
-  { id: "F-1021", customer: "Fatma Şahin", date: "16 May 2025", dueDate: "16 Haz 2025", amount: "₺280", status: "Gecikti" },
-  { id: "F-1020", customer: "Ali Can", date: "15 May 2025", dueDate: "15 Haz 2025", amount: "₺2,100", status: "Ödendi" },
-];
+interface Invoice {
+  id: string;
+  customerId: string;
+  number: string;
+  date: Date;
+  dueDate: Date;
+  status: string;
+  notes: string | null;
+  total: number;
+  createdAt: Date;
+  customer: { id: string; name: string } | null;
+  items: { id: string; service: string; quantity: number; unitPrice: number; total: number }[];
+}
 
-const statusStyles: Record<string, string> = {
-  "Ödendi": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  "Ödenmedi": "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  "Gecikti": "bg-rose-500/10 text-rose-400 border-rose-500/20",
-  "Taslak": "bg-slate-500/10 text-slate-400 border-slate-500/20",
-};
+interface DemoUser {
+  name: string;
+  email: string;
+  role: string;
+}
 
-export default async function InvoicesPage() {
-  const user = await getDemoUser();
-  if (!user) redirect("/login");
+export default function InvoicesPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<DemoUser | null>(null);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [customers, setCustomers] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const authorized = await hasRole(["ADMIN", "MANAGER"]);
-  if (!authorized) {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [invRes, custRes] = await Promise.all([
+        getInvoices(),
+        getCustomers(),
+      ]);
+
+      if (invRes.success) {
+        setInvoices(invRes.data || []);
+      } else {
+        setError(invRes.error || "Faturalar yüklenirken hata oluştu");
+      }
+
+      if (custRes.success) {
+        setCustomers(custRes.data?.map((c: any) => ({ id: c.id, name: c.name })) || []);
+      }
+    } catch (err) {
+      setError("Sayfa yüklenirken bir hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const u = await getDemoUser();
+        if (!u) {
+          router.push("/login");
+          return;
+        }
+        setUser(u);
+
+        const auth = await hasRole(["ADMIN", "MANAGER"]);
+        setAuthorized(auth);
+
+        if (auth) {
+          await fetchData();
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        setError("Sayfa yüklenirken bir hata oluştu");
+        setLoading(false);
+      }
+    }
+    init();
+  }, [fetchData, router]);
+
+  if (!user && loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-pulse text-slate-500 text-sm">Yükleniyor...</div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  if (authorized === false) {
     return (
       <DashboardLayout
         pageTitle="Faturalar"
@@ -41,91 +119,30 @@ export default async function InvoicesPage() {
     );
   }
 
-  const userName = user.name;
-  const role = user.role;
-
   return (
     <DashboardLayout
       pageTitle="Faturalar"
       breadcrumbs={[{ label: "Faturalar" }]}
-      user={{ name: userName, email: user.email, role }}
+      user={{ name: user.name, email: user.email, role: user.role }}
     >
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="relative flex items-center">
-            <Search size={16} className="absolute left-3 text-slate-500 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Fatura ara..."
-              className={cn(
-                "pl-9 pr-3 py-2 rounded-lg text-sm w-64",
-                "bg-slate-900 border border-slate-800 text-slate-200 placeholder:text-slate-600",
-                "focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
-              )}
-            />
-          </div>
-          <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 text-sm hover:bg-slate-800 transition-colors">
-            <Calendar size={16} />
-            Tarih
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 text-sm hover:bg-slate-800 transition-colors">
-            <Download size={16} />
-            İndir
-          </button>
-          <a
-            href="/invoices/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
-          >
-            <Plus size={16} />
-            Yeni Fatura
-          </a>
-        </div>
-      </div>
-
-      {invoices.length === 0 ? (
+      {loading ? (
+        <SkeletonTable columns={7} rows={5} />
+      ) : error ? (
+        <ErrorState message={error} onRetry={fetchData} />
+      ) : invoices.length === 0 && customers.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="Henüz fatura yok"
-          description="İlk fatura eklemek için + butonuna tıklayın"
+          description="İlk fatura eklemek için yukarıdaki butonu kullanın"
           actionLabel="Yeni Fatura Ekle"
-          onAction={() => { /* navigate handled by link above */ }}
+          onAction={() => { window.location.href = "/invoices/new"; }}
         />
       ) : (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
-                  <th className="px-5 py-3 font-medium">Fatura No</th>
-                  <th className="px-5 py-3 font-medium">Müşteri</th>
-                  <th className="px-5 py-3 font-medium">Tarih</th>
-                  <th className="px-5 py-3 font-medium">Son Ödeme</th>
-                  <th className="px-5 py-3 font-medium">Durum</th>
-                  <th className="px-5 py-3 font-medium text-right">Tutar</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{invoice.id}</td>
-                    <td className="px-5 py-3.5 text-slate-200 font-medium">{invoice.customer}</td>
-                    <td className="px-5 py-3.5 text-slate-400 text-xs">{invoice.date}</td>
-                    <td className="px-5 py-3.5 text-slate-400 text-xs">{invoice.dueDate}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border", statusStyles[invoice.status] || "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-200 font-medium text-right">{invoice.amount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <InvoiceList
+          invoices={invoices}
+          customers={customers}
+          onRefresh={fetchData}
+        />
       )}
     </DashboardLayout>
   );

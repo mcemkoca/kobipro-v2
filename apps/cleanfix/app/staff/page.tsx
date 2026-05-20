@@ -1,17 +1,26 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState, useEffect } from "react";
 import { getDemoUser, hasRole } from "@/lib/auth";
+import { getStaff } from "../actions/staff";
 import DashboardLayout from "../components/DashboardLayout";
 import { EmptyState } from "../components/ui/EmptyState";
+import { SkeletonTable } from "../components/ui/SkeletonTable";
+import { ErrorState } from "../components/ui/ErrorState";
 import { UserCircle, Plus, Search, Phone, Mail, Shield } from "lucide-react";
 import { cn } from "@kobipro/ui";
 
-const staff = [
-  { id: "P-01", name: "Ali Korkmaz", role: "Teknisyen", email: "ali@cleanfix.com", phone: "+90 532 111 22 33", status: "Aktif", jobs: 45 },
-  { id: "P-02", name: "Merve Toprak", role: "Sorumlu", email: "merve@cleanfix.com", phone: "+90 533 222 33 44", status: "Aktif", jobs: 67 },
-  { id: "P-03", name: "Burak Şahin", role: "Teknisyen", email: "burak@cleanfix.com", phone: "+90 535 333 44 55", status: "İzinli", jobs: 38 },
-  { id: "P-04", name: "Deniz Yıldız", role: "Teknisyen", email: "deniz@cleanfix.com", phone: "+90 536 444 55 66", status: "Aktif", jobs: 52 },
-  { id: "P-05", name: "Can Özdemir", role: "Yönetici", email: "can@cleanfix.com", phone: "+90 537 555 66 77", status: "Aktif", jobs: 0 },
-];
+interface DemoUser {
+  name: string;
+  email: string;
+  role: string;
+}
+
+const roleDisplayMap: Record<string, string> = {
+  EMPLOYEE: "Teknisyen",
+  MANAGER: "Sorumlu",
+  ADMIN: "Yönetici",
+};
 
 const statusStyles: Record<string, string> = {
   "Aktif": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -19,12 +28,74 @@ const statusStyles: Record<string, string> = {
   "Pasif": "bg-slate-500/10 text-slate-400 border-slate-500/20",
 };
 
-export default async function StaffPage() {
-  const user = await getDemoUser();
-  if (!user) redirect("/login");
+export default function StaffPage() {
+  const [user, setUser] = useState<DemoUser | null>(null);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [filteredStaff, setFilteredStaff] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const authorized = await hasRole(["ADMIN", "MANAGER"]);
-  if (!authorized) {
+  useEffect(() => {
+    async function init() {
+      try {
+        const u = await getDemoUser();
+        if (!u) {
+          window.location.href = "/login";
+          return;
+        }
+        setUser(u);
+
+        const auth = await hasRole(["ADMIN", "MANAGER"]);
+        setAuthorized(auth);
+
+        if (auth) {
+          const res = await getStaff();
+          if (res.success) {
+            setStaff(res.data || []);
+            setFilteredStaff(res.data || []);
+          } else {
+            setError(res.error || "Personel yüklenirken hata oluştu");
+          }
+        }
+      } catch (err) {
+        setError("Sayfa yüklenirken bir hata oluştu");
+      } finally {
+        setLoading(false);
+      }
+    }
+    init();
+  }, []);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredStaff(staff);
+      return;
+    }
+    const q = searchQuery.toLowerCase();
+    setFilteredStaff(
+      staff.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(q) ||
+          s.email?.toLowerCase().includes(q) ||
+          s.phone?.toLowerCase().includes(q) ||
+          roleDisplayMap[s.role]?.toLowerCase().includes(q)
+      )
+    );
+  }, [searchQuery, staff]);
+
+  if (!user && loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-pulse text-slate-500 text-sm">Yükleniyor...</div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  if (authorized === false) {
     return (
       <DashboardLayout
         pageTitle="Personel"
@@ -40,14 +111,11 @@ export default async function StaffPage() {
     );
   }
 
-  const userName = user.name;
-  const role = user.role;
-
   return (
     <DashboardLayout
       pageTitle="Personel"
       breadcrumbs={[{ label: "Personel" }]}
-      user={{ name: userName, email: user.email, role }}
+      user={{ name: user.name, email: user.email, role: user.role }}
     >
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -56,6 +124,8 @@ export default async function StaffPage() {
           <input
             type="text"
             placeholder="Personel ara..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(
               "pl-9 pr-3 py-2 rounded-lg text-sm w-64",
               "bg-slate-900 border border-slate-800 text-slate-200 placeholder:text-slate-600",
@@ -72,13 +142,28 @@ export default async function StaffPage() {
         </a>
       </div>
 
-      {staff.length === 0 ? (
+      {error && !loading && (
+        <div className="mb-6">
+          <ErrorState
+            message={error}
+            onRetry={() => window.location.reload()}
+          />
+        </div>
+      )}
+
+      {loading ? (
+        <SkeletonTable columns={5} rows={5} />
+      ) : filteredStaff.length === 0 ? (
         <EmptyState
           icon={UserCircle}
-          title="Henüz personel yok"
-          description="İlk personel eklemek için + butonuna tıklayın"
-          actionLabel="Yeni Personel Ekle"
-          onAction={() => { /* navigate handled by link above */ }}
+          title={searchQuery ? "Sonuç bulunamadı" : "Henüz personel yok"}
+          description={
+            searchQuery
+              ? "Aramanızla eşleşen personel bulunamadı"
+              : "İlk personel eklemek için + butonuna tıklayın"
+          }
+          actionLabel={!searchQuery ? "Yeni Personel Ekle" : undefined}
+          onAction={!searchQuery ? () => { window.location.href = "/staff/new"; } : undefined}
         />
       ) : (
         <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
@@ -94,45 +179,49 @@ export default async function StaffPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {staff.map((member) => (
-                  <tr key={member.id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-white">
-                          {member.name.split(" ").map(n => n[0]).join("")}
+                {filteredStaff.map((member) => {
+                  const displayRole = roleDisplayMap[member.role] || member.role || "—";
+                  const displayStatus = member.active === false ? "Pasif" : "Aktif";
+                  return (
+                    <tr key={member.id} className="hover:bg-slate-800/50 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-white">
+                            {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-200">{member.name}</p>
+                            <p className="text-xs text-slate-500">{member.id?.slice(0, 8).toUpperCase()}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-200">{member.name}</p>
-                          <p className="text-xs text-slate-500">{member.id}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                          <Shield size={13} className="text-slate-500" />
+                          {displayRole}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="space-y-1 text-xs text-slate-400">
+                          <div className="flex items-center gap-1.5">
+                            <Mail size={12} />
+                            {member.email || "—"}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Phone size={12} />
+                            {member.phone || "—"}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                        <Shield size={13} className="text-slate-500" />
-                        {member.role}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="space-y-1 text-xs text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                          <Mail size={12} />
-                          {member.email}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Phone size={12} />
-                          {member.phone}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border", statusStyles[member.status] || "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
-                        {member.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right text-slate-200 font-medium">{member.jobs} iş</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border", statusStyles[displayStatus] || "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
+                          {displayStatus}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-slate-200 font-medium">—</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

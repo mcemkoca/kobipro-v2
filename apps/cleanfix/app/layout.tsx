@@ -13,8 +13,37 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KobiPro v2 — CleanFix",
-  description: "Cleaning business management platform",
+  title: "KobiPro — KOBİ Yönetim Platformu",
+  description:
+    "KobiPro, temizlik, inşaat, berber, restoran ve daha birçok sektör için KOBİ yönetim platformu. Randevu, müşteri, personel, fatura ve raporlama.",
+  keywords: [
+    "KOBİ",
+    "SaaS",
+    "temizlik",
+    "inşaat",
+    "randevu yönetimi",
+    "fatura",
+    "personel",
+    "Belçika",
+    "Hollanda",
+  ],
+  authors: [{ name: "KobiPro" }],
+  openGraph: {
+    title: "KobiPro — KOBİ Yönetim Platformu",
+    description: "Sektöre özel SaaS çözümleri. 9 sektör, tek platform.",
+    type: "website",
+    locale: "tr_TR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KobiPro",
+    description: "KOBİ Yönetim Platformu",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  viewport: "width=device-width, initial-scale=1",
 };
 
 export default function RootLayout({

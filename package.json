@@ -7,8 +7,8 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate",
-    "db:push": "turbo run db:push",
+    "db:seed": "cd packages/db && npx prisma db seed",
+    "db:migrate": "cd packages/db && npx prisma migrate deploy",
     "db:studio": "turbo run db:studio"
   },
   "devDependencies": {

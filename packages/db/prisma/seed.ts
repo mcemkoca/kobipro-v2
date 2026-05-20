@@ -1,6 +1,11 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-const prisma = new PrismaClient();
+const connectionString = process.env["DATABASE_URL"]!;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -16,7 +21,62 @@ async function main() {
   await prisma.company.deleteMany();
   await prisma.organization.deleteMany();
 
-  // Organization
+  // ─── DEMO FIRMS / ORGANIZATIONS ──────────────────────────────────────
+  const demoFirms = await prisma.$transaction([
+    prisma.organization.create({
+      data: {
+        name: "Broom & Bloom Cleaning",
+        slug: "broom-bloom-cleaning",
+        description: "Profesyonel ev & ofis temizliği hizmetleri. Brugge merkezli, BV/SRL statüsünde kaliteli ve güvenilir temizlik çözümleri.",
+        website: "https://broomandbloom.be",
+      },
+    }),
+    prisma.organization.create({
+      data: {
+        name: "Schoonmaak Direct NL",
+        slug: "schoonmaak-direct-nl",
+        description: "Amsterdam merkezli endüstriyel temizlik ve warehouse cleaning uzmanı. Büyük ölçekli depo ve üretim tesisleri için profesyonel çözümler.",
+        website: "https://schoonmaakdirect.nl",
+      },
+    }),
+    prisma.organization.create({
+      data: {
+        name: "PureSpace Brussels",
+        slug: "purespace-brussels",
+        description: "Brüksel merkezli premium ofis ve healthcare facility temizliği. Hijyen standartlarında uzmanlaşmış, sağlık sektörüne özel temizlik hizmetleri.",
+        website: "https://purespace.brussels",
+      },
+    }),
+  ]);
+  console.log(`✅ ${demoFirms.length} demo firms (organizations) created`);
+
+  // Companies linked to demo firms
+  const demoCompanies = await prisma.$transaction([
+    prisma.company.create({
+      data: {
+        name: "Broom & Bloom Cleaning BV",
+        description: "Ev ve ofis temizliği uzmanı — Brugge, Belçika",
+        organizationId: demoFirms[0].id,
+      },
+    }),
+    prisma.company.create({
+      data: {
+        name: "Schoonmaak Direct NL B.V.",
+        description: "Endüstriyel ve warehouse temizlik — Amsterdam, Hollanda",
+        organizationId: demoFirms[1].id,
+      },
+    }),
+    prisma.company.create({
+      data: {
+        name: "PureSpace Brussels NV",
+        description: "Premium ofis ve healthcare temizliği — Brüksel, Belçika",
+        organizationId: demoFirms[2].id,
+      },
+    }),
+  ]);
+  console.log(`✅ ${demoCompanies.length} companies created`);
+
+  // Main CleanFix Organization
   const org = await prisma.organization.create({
     data: { name: "CleanFix Ltd.", slug: "cleanfix", description: "Profesyonel temizlik ve bakım hizmetleri", website: "https://cleanfix.com" },
   });
@@ -102,11 +162,23 @@ async function main() {
       { email: "admin@cleanfix.com", name: "Admin User", role: "ADMIN", organizationId: org.id },
       { email: "manager@cleanfix.com", name: "Manager User", role: "MANAGER", organizationId: org.id },
       { email: "customer@email.com", name: "Customer User", role: "CUSTOMER" },
+      { email: "employee@cleanfix.com", name: "Employee User", role: "EMPLOYEE", organizationId: org.id },
     ],
   });
-  console.log(`✅ 3 users created`);
+  console.log(`✅ 4 users created`);
 
-  console.log("🎉 Seed complete!");
+  // Print demo firm details
+  console.log("\n🏢 DEMO FIRMS:");
+  demoFirms.forEach((firm, i) => {
+    console.log(`  ${i + 1}. ${firm.name}`);
+    console.log(`     slug: ${firm.slug}`);
+    console.log(`     website: ${firm.website}`);
+    console.log(`     description: ${firm.description}`);
+    console.log(`     id: ${firm.id}`);
+    console.log(`     createdAt: ${firm.createdAt.toISOString()}`);
+  });
+
+  console.log("\n🎉 Seed complete!");
 }
 
 main()

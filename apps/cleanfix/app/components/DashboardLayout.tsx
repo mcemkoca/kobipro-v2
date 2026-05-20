@@ -24,15 +24,24 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const handleLogout = () => {
+    if (typeof document !== "undefined") {
+      document.cookie = "demo_login=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      window.location.href = "/login";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <Sidebar user={user} />
+      <Sidebar user={user} mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
       <div className="lg:ml-[280px] min-h-screen flex flex-col">
         <Header
           pageTitle={pageTitle}
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
           breadcrumbs={breadcrumbs}
+          user={user}
+          onLogout={handleLogout}
         />
 
         <main className="flex-1 p-6">{children}</main>
