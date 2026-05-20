@@ -28,11 +28,9 @@ const demoCompany = {
 
 export async function getCompany() {
   try {
-    const company = await prisma.company?.findFirst?.() || null;
-    if (!company) return { success: true, data: demoCompany };
-    return { success: true, data: company };
+    // Schema'da Company modeli yok — demo data dön
+    return { success: true, data: demoCompany };
   } catch (error) {
-    if (isDbError(error)) return { success: true, data: demoCompany };
     return { success: false, error: "Şirket bilgileri yüklenirken hata oluştu" };
   }
 }
@@ -69,11 +67,9 @@ const demoUserSettings = {
 
 export async function getUserSettings(userId?: string) {
   try {
-    const settings = await prisma.userSettings?.findUnique?.({ where: { userId: userId || "demo" } }) || null;
-    if (!settings) return { success: true, data: demoUserSettings };
-    return { success: true, data: settings };
+    // Schema'da UserSettings modeli yok — demo data dön
+    return { success: true, data: demoUserSettings };
   } catch (error) {
-    if (isDbError(error)) return { success: true, data: demoUserSettings };
     return { success: false, error: "Ayarlar yüklenirken hata oluştu" };
   }
 }
