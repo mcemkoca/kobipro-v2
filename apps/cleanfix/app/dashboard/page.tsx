@@ -128,6 +128,7 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
 
   useEffect(() => {
     async function init() {
@@ -139,17 +140,19 @@ export default function DashboardPage() {
         }
         setUser(u);
 
-        const [bkRes, cuRes, invRes] = await Promise.all([
+        const [bkRes, cuRes, invRes, stRes] = await Promise.all([
           getBookings(),
           getCustomers(),
           getInvoices(),
+          import("../actions/staff").then((m) => m.getStaff()),
         ]);
 
         if (bkRes.success) setBookings(bkRes.data || []);
         if (cuRes.success) setCustomers(cuRes.data || []);
         if (invRes.success) setInvoices(invRes.data || []);
+        if (stRes.success) setStaff(stRes.data || []);
 
-        if (!bkRes.success || !cuRes.success || !invRes.success) {
+        if (!bkRes.success || !cuRes.success || !invRes.success || !stRes.success) {
           setError("Bazı veriler yüklenirken hata oluştu");
         }
       } catch (err) {
@@ -189,15 +192,44 @@ export default function DashboardPage() {
 
   const hasRevenueData = revenueByMonth.some((m) => m.total > 0);
 
+  /* ---------- Trend hesaplamaları ---------- */
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+  const sixtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 60);
+
+  const bookingsLast30 = bookings.filter((b) => new Date(b.createdAt) >= thirtyDaysAgo).length;
+  const bookingsPrev30 = bookings.filter((b) => { const d = new Date(b.createdAt); return d >= sixtyDaysAgo && d < thirtyDaysAgo; }).length;
+  const bookingsChange = bookingsPrev30 === 0 ? (bookingsLast30 > 0 ? 100 : 0) : Math.round(((bookingsLast30 - bookingsPrev30) / bookingsPrev30) * 100);
+
+  const customersLast30 = customers.filter((c) => new Date(c.createdAt) >= thirtyDaysAgo).length;
+  const customersPrev30 = customers.filter((c) => { const d = new Date(c.createdAt); return d >= sixtyDaysAgo && d < thirtyDaysAgo; }).length;
+  const customersChange = customersPrev30 === 0 ? (customersLast30 > 0 ? 100 : 0) : Math.round(((customersLast30 - customersPrev30) / customersPrev30) * 100);
+
   const paidInvoices = invoices.filter((inv) => inv.status === "PAID");
   const pendingInvoices = invoices.filter((inv) => inv.status !== "PAID");
-  const monthlyRevenue = paidInvoices.reduce((sum, inv) => sum + Number(inv.amount || inv.total || 0), 0);
+  const revenueLast30 = paidInvoices.filter((inv) => new Date(inv.paidDate || inv.createdAt) >= thirtyDaysAgo).reduce((sum, inv) => sum + Number(inv.amount || inv.total || 0), 0);
+  const revenuePrev30 = paidInvoices.filter((inv) => { const d = new Date(inv.paidDate || inv.createdAt); return d >= sixtyDaysAgo && d < thirtyDaysAgo; }).reduce((sum, inv) => sum + Number(inv.amount || inv.total || 0), 0);
+  const revenueChange = revenuePrev30 === 0 ? (revenueLast30 > 0 ? 100 : 0) : Math.round(((revenueLast30 - revenuePrev30) / revenuePrev30) * 100);
+
+  const pendingLast30 = pendingInvoices.filter((inv) => new Date(inv.createdAt) >= thirtyDaysAgo).length;
+  const pendingPrev30 = pendingInvoices.filter((inv) => { const d = new Date(inv.createdAt); return d >= sixtyDaysAgo && d < thirtyDaysAgo; }).length;
+  const pendingChange = pendingPrev30 === 0 ? (pendingLast30 > 0 ? 100 : 0) : Math.round(((pendingLast30 - pendingPrev30) / pendingPrev30) * 100);
+
+  /* ---------- Bugünün randevuları ---------- */
+  const todayStr = now.toISOString().slice(0, 10);
+  const todayBookings = bookings.filter((b) => new Date(b.date).toISOString().slice(0, 10) === todayStr && b.status !== "CANCELLED");
+
+  /* ---------- Personel performansı ---------- */
+  const activeStaff = staff.filter((s) => s.active !== false);
+  const topStaff = [...activeStaff].sort((a, b) => (b.jobs || 0) - (a.jobs || 0)).slice(0, 3);
 
   const stats: DashboardStats[] = [
     {
       title: "Toplam Randevu",
       value: bookings.length.toLocaleString("tr-TR"),
       hasData: bookings.length > 0,
+      change: `${Math.abs(bookingsChange)}%`,
+      changeUp: bookingsChange >= 0,
       icon: CalendarDays,
       iconBg: "bg-blue-500/10",
       iconColor: "text-blue-400",
@@ -206,14 +238,18 @@ export default function DashboardPage() {
       title: "Aktif Müşteri",
       value: customers.length.toLocaleString("tr-TR"),
       hasData: customers.length > 0,
+      change: `${Math.abs(customersChange)}%`,
+      changeUp: customersChange >= 0,
       icon: Users,
       iconBg: "bg-emerald-500/10",
       iconColor: "text-emerald-400",
     },
     {
       title: "Aylık Gelir",
-      value: formatCurrency(monthlyRevenue),
-      hasData: monthlyRevenue > 0,
+      value: formatCurrency(revenueLast30),
+      hasData: revenueLast30 > 0,
+      change: `${Math.abs(revenueChange)}%`,
+      changeUp: revenueChange >= 0,
       icon: Banknote,
       iconBg: "bg-amber-500/10",
       iconColor: "text-amber-400",
@@ -222,6 +258,8 @@ export default function DashboardPage() {
       title: "Bekleyen Fatura",
       value: pendingInvoices.length.toLocaleString("tr-TR"),
       hasData: pendingInvoices.length > 0,
+      change: `${Math.abs(pendingChange)}%`,
+      changeUp: pendingChange <= 0,
       icon: Receipt,
       iconBg: "bg-rose-500/10",
       iconColor: "text-rose-400",
@@ -327,130 +365,216 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Recent Bookings Table */}
-        <div className="xl:col-span-2 rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-            <h2 className="text-sm font-semibold text-slate-200">Son Randevular</h2>
-            <a
-              href="/bookings"
-              className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              Tümünü gör
-              <ArrowRight size={14} />
-            </a>
-          </div>
-          {loading ? (
-            <SkeletonTable columns={6} rows={5} />
-          ) : recentBookings.length === 0 ? (
-            <div className="p-8">
-              <EmptyState
-                icon={CalendarDays}
-                title="Henüz randevu yok"
-                description="İlk randevu oluşturduğunuzda burada görünecek"
-              />
+        {/* Bugünün Randevuları + Personel — sağ kolon üstte mobilde */}
+        <div className="xl:col-span-1 space-y-6 order-first xl:order-last">
+          {/* Bugünün Randevuları */}
+          <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+              <h2 className="text-sm font-semibold text-slate-200">Bugünün Randevuları</h2>
+              <span className="text-xs text-slate-500">{todayBookings.length} adet</span>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
-                    <th className="px-5 py-3 font-medium">ID</th>
-                    <th className="px-5 py-3 font-medium">Müşteri</th>
-                    <th className="px-5 py-3 font-medium">Hizmet</th>
-                    <th className="px-5 py-3 font-medium">Tarih</th>
-                    <th className="px-5 py-3 font-medium">Durum</th>
-                    <th className="px-5 py-3 font-medium text-right">Tutar</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {recentBookings.map((booking) => {
-                    const displayStatus = statusMap[booking.status] || booking.status;
-                    return (
-                      <tr
-                        key={booking.id}
-                        className="hover:bg-slate-800/50 transition-colors"
-                      >
-                        <td className="px-5 py-3 text-slate-400 font-mono text-xs">
-                          {booking.id?.slice(0, 8).toUpperCase()}
-                        </td>
-                        <td className="px-5 py-3 text-slate-200 font-medium">
-                          {booking.customer?.name || "—"}
-                        </td>
-                        <td className="px-5 py-3 text-slate-400">
-                          {booking.service?.name || "—"}
-                        </td>
-                        <td className="px-5 py-3 text-slate-400 text-xs">
-                          {formatDate(booking.date)}
-                        </td>
-                        <td className="px-5 py-3">
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border",
-                              statusStyles[displayStatus] || "bg-slate-500/10 text-slate-400 border-slate-500/20"
-                            )}
-                          >
-                            {displayStatus}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 text-slate-200 font-medium text-right">
-                          {booking.service?.price ? formatCurrency(Number(booking.service.price)) : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Revenue Chart */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-800">
-            <h2 className="text-sm font-semibold text-slate-200">Gelir Özeti</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Son 6 ay</p>
-          </div>
-          <div className="p-5">
-            {loading ? (
-              <div className="h-48 flex items-center justify-center">
-                <div className="animate-pulse h-32 w-full bg-slate-800 rounded-lg" />
-              </div>
-            ) : !hasRevenueData ? (
-              <div className="h-48 flex flex-col items-center justify-center text-slate-500">
-                <Banknote size={32} className="text-slate-700 mb-3" />
-                <p className="text-sm">Henüz fatura kaydı yok</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  Faturalandırma başladığında grafik oluşacak
-                </p>
+            {todayBookings.length === 0 ? (
+              <div className="p-5 text-center">
+                <CalendarDays size={24} className="text-slate-700 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">Bugün randevu yok</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                <SimpleBarChart
-                  data={revenueByMonth.map((m) => ({
-                    label: m.label,
-                    bars: [
-                      { value: m.total, color: "bg-blue-500/60" },
-                      { value: m.paid, color: "bg-emerald-500/60" },
-                      { value: m.unpaid, color: "bg-rose-500/60" },
-                    ],
-                  }))}
-                />
-                <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-800">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className="w-2 h-2 rounded-full bg-blue-500/60" />
-                    <span className="text-slate-400">Toplam</span>
+              <div className="divide-y divide-slate-800">
+                {todayBookings.map((b) => (
+                  <div key={b.id} className="px-5 py-3 hover:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-200">{b.customer?.name || "Müşteri"}</p>
+                      <span className="text-xs text-slate-400">{b.time || "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-xs text-slate-500">{b.service?.name || "Hizmet"}</p>
+                      <span className={cn(
+                        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
+                        b.status === "COMPLETED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                        b.status === "IN_PROGRESS" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                        b.status === "CONFIRMED" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                        "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                      )}>
+                        {statusMap[b.status] || b.status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500/60" />
-                    <span className="text-slate-400">Ödenen</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className="w-2 h-2 rounded-full bg-rose-500/60" />
-                    <span className="text-slate-400">Ödenmemiş</span>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
+          </div>
+
+          {/* Personel Performansı */}
+          <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-800">
+              <h2 className="text-sm font-semibold text-slate-200">Personel Performansı</h2>
+            </div>
+            {topStaff.length === 0 ? (
+              <div className="p-5 text-center">
+                <Users size={24} className="text-slate-700 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">Henüz personel kaydı yok</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-800">
+                {topStaff.map((s) => (
+                  <div key={s.id} className="px-5 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">
+                          {s.name?.charAt(0) || "?"}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-200">{s.name}</p>
+                          <p className="text-xs text-slate-500">{s.displayRole || s.role}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-slate-100">{s.jobs || 0}</p>
+                        <p className="text-[10px] text-slate-500">iş tamamladı</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                      <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.min(100, ((s.jobs || 0) / 50) * 100)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="px-5 py-3 border-t border-slate-800">
+              <a href="/staff" className="text-xs text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center gap-1">
+                Tüm personel <ArrowRight size={12} />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Son Randevular + Gelir — sol kolon */}
+        <div className="xl:col-span-2 space-y-6">
+          {/* Recent Bookings */}
+          <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+              <h2 className="text-sm font-semibold text-slate-200">Son Randevular</h2>
+              <a
+                href="/bookings"
+                className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Tümünü gör
+                <ArrowRight size={14} />
+              </a>
+            </div>
+            {loading ? (
+              <SkeletonTable columns={6} rows={5} />
+            ) : recentBookings.length === 0 ? (
+              <div className="p-8">
+                <EmptyState
+                  icon={CalendarDays}
+                  title="Henüz randevu yok"
+                  description="İlk randevu oluşturduğunuzda burada görünecek"
+                />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
+                      <th className="px-5 py-3 font-medium">ID</th>
+                      <th className="px-5 py-3 font-medium">Müşteri</th>
+                      <th className="px-5 py-3 font-medium">Hizmet</th>
+                      <th className="px-5 py-3 font-medium">Tarih</th>
+                      <th className="px-5 py-3 font-medium">Durum</th>
+                      <th className="px-5 py-3 font-medium text-right">Tutar</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {recentBookings.map((booking) => {
+                      const displayStatus = statusMap[booking.status] || booking.status;
+                      return (
+                        <tr
+                          key={booking.id}
+                          className="hover:bg-slate-800/50 transition-colors"
+                        >
+                          <td className="px-5 py-3 text-slate-400 font-mono text-xs">
+                            {booking.id?.slice(0, 8).toUpperCase()}
+                          </td>
+                          <td className="px-5 py-3 text-slate-200 font-medium">
+                            {booking.customer?.name || "—"}
+                          </td>
+                          <td className="px-5 py-3 text-slate-400">
+                            {booking.service?.name || "—"}
+                          </td>
+                          <td className="px-5 py-3 text-slate-400 text-xs">
+                            {formatDate(booking.date)}
+                          </td>
+                          <td className="px-5 py-3">
+                            <span
+                              className={cn(
+                                "inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border",
+                                statusStyles[displayStatus] || "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                              )}
+                            >
+                              {displayStatus}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-slate-200 font-medium text-right">
+                            {booking.service?.price ? formatCurrency(Number(booking.service.price)) : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Revenue Chart */}
+          <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-800">
+              <h2 className="text-sm font-semibold text-slate-200">Gelir Özeti</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Son 6 ay</p>
+            </div>
+            <div className="p-5">
+              {loading ? (
+                <div className="h-48 flex items-center justify-center">
+                  <div className="animate-pulse h-32 w-full bg-slate-800 rounded-lg" />
+                </div>
+              ) : !hasRevenueData ? (
+                <div className="h-48 flex flex-col items-center justify-center text-slate-500">
+                  <Banknote size={32} className="text-slate-700 mb-3" />
+                  <p className="text-sm">Henüz fatura kaydı yok</p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Faturalandırma başladığında grafik oluşacak
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <SimpleBarChart
+                    data={revenueByMonth.map((m) => ({
+                      label: m.label,
+                      bars: [
+                        { value: m.total, color: "bg-blue-500/60" },
+                        { value: m.paid, color: "bg-emerald-500/60" },
+                        { value: m.unpaid, color: "bg-rose-500/60" },
+                      ],
+                    }))}
+                  />
+                  <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-800">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2 h-2 rounded-full bg-blue-500/60" />
+                      <span className="text-slate-400">Toplam</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500/60" />
+                      <span className="text-slate-400">Ödenen</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2 h-2 rounded-full bg-rose-500/60" />
+                      <span className="text-slate-400">Ödenmemiş</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
