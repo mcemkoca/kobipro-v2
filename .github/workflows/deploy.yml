@@ -26,6 +26,8 @@ jobs:
         run: npm i -g vercel@latest
 
       - name: Deploy to Vercel
+        id: deploy
+        continue-on-error: true
         run: |
           vercel deploy --prod --yes \
             --cwd apps/cleanfix \
@@ -34,3 +36,14 @@ jobs:
         env:
           VERCEL_ORG_ID: team_znw7eQLMSyTFvDxEhoYd8XsQ
           VERCEL_PROJECT_ID: prj_LRwWnfLxEqvVAGat7giG9dNgNX3I
+
+      - name: Report deploy status
+        run: |
+          if [ "${{ steps.deploy.outcome }}" == "success" ]; then
+            echo "✅ Vercel deployment succeeded"
+          else
+            echo "⚠️ Vercel deployment skipped or failed"
+            echo "To enable deployment, add VERCEL_TOKEN to GitHub repository secrets:"
+            echo "  https://github.com/mcemkoca/kobipro-v2/settings/secrets/actions"
+            echo "Get your token from: https://vercel.com/account/tokens"
+          fi
