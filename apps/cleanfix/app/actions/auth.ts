@@ -45,23 +45,26 @@ export async function login(formData: FormData) {
     path: "/",
   };
 
-  cookies().set("demo_login", token, cookieOpts);
-  cookies().set("user", JSON.stringify(userData), cookieOpts);
+  const cookieStore = await cookies();
+  cookieStore.set("demo_login", token, cookieOpts);
+  cookieStore.set("user", JSON.stringify(userData), cookieOpts);
 
   revalidatePath("/");
   return { success: true, redirect, user: userData };
 }
 
 export async function logout() {
-  cookies().set("demo_login", "", { maxAge: 0, path: "/" });
-  cookies().set("user", "", { maxAge: 0, path: "/" });
+  const cookieStore = await cookies();
+  cookieStore.set("demo_login", "", { maxAge: 0, path: "/" });
+  cookieStore.set("user", "", { maxAge: 0, path: "/" });
   revalidatePath("/");
   return { success: true };
 }
 
 export async function getSession() {
-  const token = cookies().get("demo_login")?.value;
-  const userRaw = cookies().get("user")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("demo_login")?.value;
+  const userRaw = cookieStore.get("user")?.value;
 
   if (!token || !userRaw) return null;
 
@@ -88,6 +91,12 @@ export async function getDemoUser() {
     role: session.role || "admin",
     avatar: session.name?.charAt(0).toUpperCase() || "J",
   };
+}
+
+export async function isAdmin(): Promise<boolean> {
+  const session = await getSession();
+  if (!session) return false;
+  return session.role === "admin";
 }
 
 export async function requireAuth() {

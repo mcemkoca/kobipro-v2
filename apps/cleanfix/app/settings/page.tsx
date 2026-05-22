@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getDemoUser } from "@/lib/auth";
+import { getDemoUser } from "@/app/actions/auth";
 import { getCompany, getUserSettings } from "../actions/settings";
 import SettingsClient from "./SettingsClient";
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/app/actions/auth";
 
 export interface AfyonCustomer {
   id: string;
@@ -282,7 +282,7 @@ function calculateStats(): AfyonStats {
 }
 
 export async function getAfyonDashboard() {
-  const user = requireAuth();
+  const user = await requireAuth();
   if (!user) return null;
 
   return {

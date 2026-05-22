@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/app/actions/auth";
 
 export interface Invoice {
   id: string;
@@ -53,9 +53,9 @@ const CUSTOMERS = [
   { name: "Thomas Vermeer", email: "thomas.vermeer@email.com" },
 ];
 
-export async function getInvoices(): Promise<Invoice[]> {
-  const user = requireAuth();
-  if (!user) return [];
+export async function getInvoices(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  const user = await requireAuth();
+  if (!user) return { success: false, error: "Unauthorized" };
 
   const today = todayStr();
 
@@ -272,11 +272,45 @@ export async function getInvoices(): Promise<Invoice[]> {
     },
   ];
 
-  return invoices;
+  return { success: true, data: invoices as any[] };
 }
 
 export async function updateInvoiceStatus(id: string, status: string) {
-  const user = requireAuth();
+  const user = await requireAuth();
+  if (!user) return { success: false, error: "Unauthorized" };
+  return { success: true };
+}
+
+export async function createInvoice(data: any) {
+  const user = await requireAuth();
+  if (!user) return { success: false, error: "Unauthorized" };
+  
+  const newInvoice: Invoice = {
+    id: `inv-${Math.random().toString(36).substring(2, 7)}`,
+    invoiceNumber: `CF-2026-${Math.floor(Math.random() * 900 + 100)}`,
+    customer: data.customer || data.customerId || "Müşteri",
+    email: data.email || "",
+    service: data.service || "Hizmet",
+    date: data.date || new Date().toISOString().split("T")[0],
+    dueDate: data.dueDate || new Date().toISOString().split("T")[0],
+    amount: Number(data.amount) || Number(data.total) || 0,
+    tax: Number(data.tax) || 0,
+    total: Number(data.total) || Number(data.amount) || 0,
+    status: data.status || "DRAFT",
+    notes: data.notes || "",
+  };
+  
+  return { success: true, data: newInvoice };
+}
+
+export async function updateInvoice(id: string, data: any) {
+  const user = await requireAuth();
+  if (!user) return { success: false, error: "Unauthorized" };
+  return { success: true, data: { id, ...data } };
+}
+
+export async function deleteInvoice(id: string) {
+  const user = await requireAuth();
   if (!user) return { success: false, error: "Unauthorized" };
   return { success: true };
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/app/actions/auth";
 
 /* ------------------------------------------------------------------ */
 /*  Demo Employee Data — seeded so nothing is ever empty               */
@@ -71,7 +71,7 @@ export interface PerformanceStats {
 }
 
 export async function getEmployeeDashboard() {
-  const user = requireAuth();
+  const user = await requireAuth();
   if (!user) return null;
 
   /* Always return a rich set so no empty states appear */
@@ -280,21 +280,21 @@ export async function getEmployeeDashboard() {
         title: "Yeni Randevu Atandı",
         message: "Ayşe Yılmaz — Ev Temizliği, 09:00",
         time: "Bugün",
-        type: "assignment",
+        type: "assignment" as const,
       },
       {
         id: "n-002",
         title: "Randevu İptal Edildi",
         message: "Maria Peeters — Cam Temizliği dün iptal edildi.",
         time: "Dün",
-        type: "cancel",
+        type: "cancel" as const,
       },
       {
         id: "n-003",
         title: "Haftalık Rapor Hazır",
         message: "Bu hafta 14 görev tamamladınız. Verimlilik %87.",
         time: "2 saat önce",
-        type: "system",
+        type: "system" as const,
       },
     ],
   };

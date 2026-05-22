@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getDemoUser, isAdmin } from "@/lib/auth";
+import { getDemoUser, isAdmin } from "@/app/actions/auth";
 import DashboardLayout from "../components/DashboardLayout";
 import { getAdminStats, getUsers, updateUserRole } from "../actions/admin";
 import { getBookings } from "../actions/bookings";
