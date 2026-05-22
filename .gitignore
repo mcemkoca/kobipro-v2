@@ -9,3 +9,4 @@ build/
 .vercel
 *.lock
 package-lock.json
+.turbo/
