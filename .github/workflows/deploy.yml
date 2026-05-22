@@ -28,8 +28,9 @@ jobs:
       - name: Deploy to Vercel
         run: |
           vercel deploy --prod --yes \
+            --cwd apps/cleanfix \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --scope=team_znw7eQLMSyTFvDxEhoYd8XsQ
         env:
           VERCEL_ORG_ID: team_znw7eQLMSyTFvDxEhoYd8XsQ
-          VERCEL_PROJECT_ID: prj_DjSiYlHK1RB59NhDRORMMrAtKkO8
+          VERCEL_PROJECT_ID: prj_LRwWnfLxEqvVAGat7giG9dNgNX3I
