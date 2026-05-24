@@ -1,2 +1,2 @@
-:HL["/kobipro-v2/_next/static/chunks/0xi-7-eso16ke.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":20,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"NAvxCoiQsu15PDJjywQje"}
+:HL["/kobipro-v2/_next/static/chunks/0x1iq2.yplel5.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":20,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"M5ksVV6K7WgPAxREBowpF"}
