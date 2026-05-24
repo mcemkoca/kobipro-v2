@@ -1,9 +1,7 @@
-import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+// Static-export compatible auth helpers for Kobipro-v2
+// No server-only APIs — demo mode always returns admin user
 
-// Server-side auth actions for Kobipro-v2 (Next.js)
-// Uses secure HTTP-only cookies via lib/auth.ts
-
+const DEMO_USER = { name: "Admin", email: "admin@cleanfix.com", role: "admin" };
 const DEMO_CREDENTIALS = [
   { email: "admin@cleanfix.com", password: "admin123", name: "Jan Wouters", role: "admin" },
   { email: "manager@cleanfix.com", password: "manager123", name: "Ayşe Yılmaz", role: "manager" },
@@ -37,44 +35,31 @@ export async function login(formData: FormData) {
   const token = generateSecureToken();
   const userData = { name: user.name, email: user.email, role: user.role };
 
-  const cookieOpts = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    maxAge: 24 * 60 * 60, // 24 hours
-    path: "/",
-  };
+  if (typeof window !== "undefined") {
+    localStorage.setItem("demo_login", token);
+    localStorage.setItem("user", JSON.stringify(userData));
+  }
 
-  const cookieStore = await cookies();
-  cookieStore.set("demo_login", token, cookieOpts);
-  cookieStore.set("user", JSON.stringify(userData), cookieOpts);
-
-  revalidatePath("/");
   return { success: true, redirect, user: userData };
 }
 
 export async function logout() {
-  const cookieStore = await cookies();
-  cookieStore.set("demo_login", "", { maxAge: 0, path: "/" });
-  cookieStore.set("user", "", { maxAge: 0, path: "/" });
-  revalidatePath("/");
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("demo_login");
+    localStorage.removeItem("user");
+  }
   return { success: true };
 }
 
 export async function getSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("demo_login")?.value;
-  const userRaw = cookieStore.get("user")?.value;
-
+  if (typeof window === "undefined") return DEMO_USER;
+  const token = localStorage.getItem("demo_login");
+  const userRaw = localStorage.getItem("user");
   if (!token || !userRaw) return null;
-
-  // Validate token format
   const parts = token.split("_");
   if (parts.length !== 3 || !token.startsWith("cf_")) return null;
-
   const ts = parseInt(parts[2], 10);
   if (isNaN(ts) || Date.now() - ts > 24 * 60 * 60 * 1000) return null;
-
   try {
     return JSON.parse(userRaw);
   } catch {

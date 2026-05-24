@@ -1,50 +1,48 @@
+'use client';
+
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn, Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
-import { rateLimit } from "@/lib/rate-limit";
 
-async function loginAction(formData: FormData) {
-  "use server";
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-  const password = formData.get("password") as string;
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const hasError = searchParams?.get("error") === "invalid";
+  const rateLimited = searchParams?.get("error") === "rate-limit";
 
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "mcemkoca0@gmail.com";
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(hasError ? "E-posta veya şifre hatalı." : null);
 
-  if (!email || !password) {
-    redirect("/login?error=invalid");
-  }
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setFormError(null);
 
-  const limit = await rateLimit(`login:${email}`);
-  if (!limit.allowed) {
-    redirect("/login?error=rate-limit");
-  }
+    const trimmedEmail = email.trim().toLowerCase();
+    const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "mcemkoca0@gmail.com";
+    const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
 
-  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-    const user = { name: "Admin", email: ADMIN_EMAIL, role: "ADMIN" };
-    const cookieStore = await cookies();
-    cookieStore.set("demo_login", encodeURIComponent(JSON.stringify(user)), {
-      path: "/",
-      maxAge: 60 * 60 * 2,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
-    redirect("/dashboard");
-  }
+    if (!trimmedEmail || !password) {
+      setFormError("E-posta ve şifre gereklidir.");
+      setLoading(false);
+      return;
+    }
 
-  redirect("/login?error=invalid");
-}
+    if (trimmedEmail === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const user = { name: "Admin", email: ADMIN_EMAIL, role: "ADMIN" };
+      const token = `cf_${Array.from({ length: 16 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0")).join("")}_${Date.now()}`;
+      localStorage.setItem("demo_login", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      router.push("/dashboard");
+      return;
+    }
 
-interface LoginPageProps {
-  searchParams?: Promise<{ error?: string }>;
-}
-
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const params = await searchParams;
-  const hasError = params?.error === "invalid";
-  const rateLimited = params?.error === "rate-limit";
+    setFormError("E-posta veya şifre hatalı.");
+    setLoading(false);
+  }, [email, password, router]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950">
@@ -64,10 +62,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <p className="text-sm text-slate-500">Hesabınıza giriş yapın</p>
           </div>
 
-          {hasError && (
+          {formError && (
             <div className="flex items-start gap-2.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3">
               <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-400" />
-              <p className="text-sm text-rose-300">E-posta veya şifre hatalı.</p>
+              <p className="text-sm text-rose-300">{formError}</p>
             </div>
           )}
 
@@ -78,7 +76,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </div>
           )}
 
-          <form action={loginAction} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1.5">E-posta</label>
               <div className="relative">
@@ -87,6 +85,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   name="email"
                   type="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="ornek@email.com"
                   className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 text-sm"
                 />
@@ -101,6 +101,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   name="password"
                   type="password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 text-sm"
                 />
@@ -109,9 +111,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-center transition-colors text-sm"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-center transition-colors text-sm disabled:opacity-50"
             >
-              Giriş Yap
+              {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
               <ArrowRight size={16} />
             </button>
           </form>

@@ -1,18 +1,3 @@
-"use server";
-
-import { prisma } from "@kobipro/db";
-import { revalidatePath } from "next/cache";
-
-function isDbError(error: unknown): boolean {
-  return error instanceof Error && (
-    error.message.includes("connect") ||
-    error.message.includes("database") ||
-    error.message.includes("connection") ||
-    error.message.includes("ENOTFOUND") ||
-    error.message.includes("ECONNREFUSED")
-  );
-}
-
 const demoCustomers = [
   { id: "cust_1", name: "Ayşe Yılmaz", email: "ayse.yilmaz@email.com", phone: "0532 111 22 33", address: "Ataşehir, İstanbul — Barbaros Mah. Yıldız Sok. No:12 D:5", notes: "Kedisi var, kapıyı açacak. İlk müşteri — Nisan 2026'dan beri.", createdAt: new Date("2026-01-15"), updatedAt: new Date("2026-05-18") },
   { id: "cust_2", name: "TechSoft A.Ş.", email: "info@techsoft.com", phone: "0212 444 55 66", address: "Levent, İstanbul — Büyükdere Cad. No:108 Kat:4", notes: "Her hafta perşembe ofis temizliği. 3 yıllık anlaşma. Ödeme 15 gün vadeli.", createdAt: new Date("2026-02-01"), updatedAt: new Date("2026-05-10") },
@@ -27,29 +12,12 @@ const demoCustomers = [
 ];
 
 export async function getCustomers() {
-  try {
-    const customers = await prisma.customer.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    if (customers.length === 0) return { success: true, data: demoCustomers };
-    return { success: true, data: customers };
-  } catch (error) {
-    if (isDbError(error)) return { success: true, data: demoCustomers };
-    return { success: false, error: "Müşteriler yüklenirken hata oluştu" };
-  }
+  return { success: true as boolean, data: demoCustomers, error: undefined as string | undefined };
 }
 
 export async function getCustomerById(id: string) {
-  try {
-    const customer = await prisma.customer.findUnique({
-      where: { id },
-      include: { bookings: { include: { service: true } } },
-    });
-    return { success: true, data: customer };
-  } catch (error) {
-    if (isDbError(error)) return { success: true, data: null };
-    return { success: false, error: "Müşteri bulunurken hata oluştu" };
-  }
+  const customer = demoCustomers.find((c) => c.id === id) || null;
+  return { success: true as boolean, data: customer, error: undefined as string | undefined };
 }
 
 export async function createCustomer(data: {
@@ -60,32 +28,19 @@ export async function createCustomer(data: {
   notes?: string;
 }) {
   try {
-    const createData: any = { name: data.name };
-    if (data.email) createData.email = data.email;
-    if (data.phone) createData.phone = data.phone;
-    if (data.address) createData.address = data.address;
-    if (data.notes) createData.notes = data.notes;
-
-    const customer = await prisma.customer.create({
-      data: createData,
-    });
-    revalidatePath("/customers");
-    return { success: true, data: customer };
-  } catch (error) {
-    if (isDbError(error)) {
-      const mock = {
-        id: `cust-${Date.now()}`,
-        name: data.name,
-        email: data.email || `${Date.now()}@demo.local`,
-        phone: data.phone || null,
-        address: data.address || null,
-        notes: data.notes || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      return { success: true, data: mock };
-    }
-    return { success: false, error: "Müşteri oluşturulurken hata oluştu" };
+    const mock = {
+      id: `cust-${Date.now()}`,
+      name: data.name,
+      email: data.email || `${Date.now()}@demo.local`,
+      phone: data.phone || null,
+      address: data.address || null,
+      notes: data.notes || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    return { success: true as boolean, data: mock, error: undefined as string | undefined };
+  } catch {
+    return { success: false as boolean, data: undefined as any, error: "Müşteri oluşturulurken hata oluştu" };
   }
 }
 
@@ -100,37 +55,26 @@ export async function updateCustomer(
   }
 ) {
   try {
-    const customer = await prisma.customer.update({
-      where: { id },
-      data,
-    });
-    revalidatePath("/customers");
-    return { success: true, data: customer };
-  } catch (error) {
-    if (isDbError(error)) {
-      const mock = {
-        id,
-        name: data.name || "Müşteri",
-        email: data.email || `${Date.now()}@demo.local`,
-        phone: data.phone || null,
-        address: data.address || null,
-        notes: data.notes || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      return { success: true, data: mock };
-    }
-    return { success: false, error: "Müşteri güncellenirken hata oluştu" };
+    const mock = {
+      id,
+      name: data.name || "Müşteri",
+      email: data.email || `${Date.now()}@demo.local`,
+      phone: data.phone || null,
+      address: data.address || null,
+      notes: data.notes || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    return { success: true as boolean, data: mock, error: undefined as string | undefined };
+  } catch {
+    return { success: false as boolean, data: undefined as any, error: "Müşteri güncellenirken hata oluştu" };
   }
 }
 
 export async function deleteCustomer(id: string) {
   try {
-    await prisma.customer.delete({ where: { id } });
-    revalidatePath("/customers");
-    return { success: true };
-  } catch (error) {
-    if (isDbError(error)) return { success: true };
-    return { success: false, error: "Müşteri silinirken hata oluştu" };
+    return { success: true as boolean, data: undefined as any, error: undefined as string | undefined };
+  } catch {
+    return { success: false as boolean, data: undefined as any, error: "Müşteri silinirken hata oluştu" };
   }
 }

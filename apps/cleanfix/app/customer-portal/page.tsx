@@ -299,7 +299,7 @@ export default function CustomerPortalPage() {
       getCustomers(),
     ]);
 
-    if (bkRes.success) setAllBookings(bkRes.data || []);
+    if (bkRes.success) setAllBookings((bkRes.data || []) as unknown as Booking[]);
     if (invRes.success) setAllInvoices(invRes.data || []);
     if (svcRes.success) setServices(svcRes.data || []);
     if (custRes.success) {
@@ -412,7 +412,9 @@ export default function CustomerPortalPage() {
       status: "PENDING",
     });
     setFormSubmitting(false);
-    if (res.success && res.data) {
+    if (!res.success) {
+      setActionMsg({ type: "err", text: res.error || "Randevu oluşturulamadı." });
+    } else if (res.data) {
       setActionMsg({ type: "ok", text: "Randevu başarıyla oluşturuldu!" });
       setAllBookings((prev) => [res.data as Booking, ...prev]);
       setShowNewBooking(false);
@@ -420,8 +422,6 @@ export default function CustomerPortalPage() {
       setNewDate("");
       setNewTime("09:00");
       setNewNotes("");
-    } else {
-      setActionMsg({ type: "err", text: res.error || "Randevu oluşturulamadı." });
     }
   }
 

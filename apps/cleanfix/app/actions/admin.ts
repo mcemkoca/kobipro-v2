@@ -1,17 +1,4 @@
-"use server";
-
-import { prisma } from "@kobipro/db";
-
-function isDbError(error: unknown): boolean {
-  return error instanceof Error && (
-    error.message.includes("connect") ||
-    error.message.includes("database") ||
-    error.message.includes("connection") ||
-    error.message.includes("ENOTFOUND") ||
-    error.message.includes("ECONNREFUSED")
-  );
-}
-
+// Static-export compatible admin helpers
 const demoUsers = [
   { id: "usr_1", name: "Elif Şen", email: "elif.sen@cleanfix.com", role: "ADMIN", createdAt: new Date("2025-08-01") },
   { id: "usr_2", name: "Ali Can", email: "ali.can@cleanfix.com", role: "MANAGER", createdAt: new Date("2025-11-01") },
@@ -26,60 +13,23 @@ const demoUsers = [
 ];
 
 export async function getAdminStats() {
-  try {
-    const [staffCount, customerCount, bookingCount, invoiceCount, serviceCount] = await Promise.all([
-      prisma.staff.count(),
-      prisma.customer.count(),
-      prisma.booking.count(),
-      prisma.invoice.count(),
-      prisma.service.count(),
-    ]);
-    return {
-      success: true,
-      data: {
-        staffCount,
-        customerCount,
-        bookingCount,
-        invoiceCount,
-        serviceCount,
-      },
-    };
-  } catch (error) {
-    if (isDbError(error)) {
-      return {
-        success: true,
-        data: {
-          staffCount: 8,
-          customerCount: 10,
-          bookingCount: 8,
-          invoiceCount: 9,
-          serviceCount: 8,
-        },
-      };
-    }
-    return { success: false, error: "İstatistikler yüklenirken hata oluştu" };
-  }
+  return {
+    success: true as boolean,
+    data: {
+      staffCount: 8,
+      customerCount: 10,
+      bookingCount: 8,
+      invoiceCount: 9,
+      serviceCount: 8,
+    },
+    error: undefined as string | undefined,
+  };
 }
 
 export async function getUsers() {
-  try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
-    });
-    if (users.length === 0) return { success: true, data: demoUsers };
-    return { success: true, data: users };
-  } catch (error) {
-    if (isDbError(error)) return { success: true, data: demoUsers };
-    return { success: false, error: "Kullanıcılar yüklenirken hata oluştu" };
-  }
+  return { success: true as boolean, data: demoUsers, error: undefined as string | undefined };
 }
 
 export async function updateUserRole(id: string, role: string) {
-  try {
-    const user = await prisma.user.update({ where: { id }, data: { role: role as any } });
-    return { success: true, data: user };
-  } catch (error) {
-    return { success: false, error: "Rol güncellenirken hata oluştu" };
-  }
+  return { success: true as boolean, data: { id, role }, error: undefined as string | undefined };
 }

@@ -1,18 +1,3 @@
-"use server";
-
-import { prisma } from "@kobipro/db";
-
-function isDbError(error: unknown): boolean {
-  return error instanceof Error && (
-    error.message.includes("connect") ||
-    error.message.includes("database") ||
-    error.message.includes("connection") ||
-    error.message.includes("ENOTFOUND") ||
-    error.message.includes("ECONNREFUSED")
-  );
-}
-
-/* ───────── Company (demo fallback) ───────── */
 const demoCompany = {
   id: "cmp_1",
   name: "CleanFix Profesyonel Temizlik",
@@ -26,13 +11,20 @@ const demoCompany = {
   logo: null,
 };
 
+const demoUserSettings = {
+  language: "tr",
+  timezone: "Europe/Istanbul",
+  currency: "TRY",
+  theme: "dark",
+  emailNotifications: true,
+  smsNotifications: false,
+  pushNotifications: false,
+  weeklyReport: true,
+  dailyDigest: false,
+};
+
 export async function getCompany() {
-  try {
-    // Schema'da Company modeli yok — demo data dön
-    return { success: true, data: demoCompany };
-  } catch (error) {
-    return { success: false, error: "Şirket bilgileri yüklenirken hata oluştu" };
-  }
+  return { success: true as boolean, data: demoCompany, error: undefined as string | undefined };
 }
 
 export async function updateCompany(data: {
@@ -46,38 +38,20 @@ export async function updateCompany(data: {
   kvk?: string;
 }) {
   try {
-    return { success: true, data: { ...demoCompany, ...data } };
-  } catch (error) {
-    return { success: false, error: "Şirket bilgileri güncellenirken hata oluştu" };
+    return { success: true as boolean, data: { ...demoCompany, ...data }, error: undefined as string | undefined };
+  } catch {
+    return { success: false as boolean, data: undefined as any, error: "Şirket güncellenirken hata oluştu" };
   }
 }
 
-/* ───────── User Settings (demo fallback) ───────── */
-const demoUserSettings = {
-  language: "tr",
-  timezone: "Europe/Istanbul",
-  currency: "TRY",
-  theme: "dark",
-  emailNotifications: true,
-  smsNotifications: false,
-  pushNotifications: false,
-  weeklyReport: true,
-  dailyDigest: false,
-};
-
 export async function getUserSettings(userId?: string) {
-  try {
-    // Schema'da UserSettings modeli yok — demo data dön
-    return { success: true, data: demoUserSettings };
-  } catch (error) {
-    return { success: false, error: "Ayarlar yüklenirken hata oluştu" };
-  }
+  return { success: true as boolean, data: demoUserSettings, error: undefined as string | undefined };
 }
 
 export async function updateUserSettings(userId: string | undefined, data: Partial<typeof demoUserSettings>) {
   try {
-    return { success: true, data: { ...demoUserSettings, ...data } };
-  } catch (error) {
-    return { success: false, error: "Ayarlar güncellenirken hata oluştu" };
+    return { success: true as boolean, data: { ...demoUserSettings, ...data }, error: undefined as string | undefined };
+  } catch {
+    return { success: false as boolean, data: undefined as any, error: "Ayarlar güncellenirken hata oluştu" };
   }
 }

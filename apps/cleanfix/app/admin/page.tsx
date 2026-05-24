@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getDemoUser, isAdmin } from "@/app/actions/auth";
 import DashboardLayout from "../components/DashboardLayout";
-import { getAdminStats, getUsers, updateUserRole } from "../actions/admin";
+import RoleSelector from "../components/RoleSelector";
+import { getAdminStats, getUsers } from "../actions/admin";
 import { getBookings } from "../actions/bookings";
 import { getInvoices } from "../actions/invoices";
 import { getCustomers } from "../actions/customers";
@@ -28,14 +29,6 @@ import {
 } from "lucide-react";
 import { cn } from "@kobipro/ui";
 import Link from "next/link";
-
-/* ---------- Server Actions (bindable) ---------- */
-async function handleRoleChange(formData: FormData) {
-  "use server";
-  const id = formData.get("id") as string;
-  const role = formData.get("role") as string;
-  if (id && role) await updateUserRole(id, role);
-}
 
 /* ---------- Helpers ---------- */
 function formatCurrency(amount: number): string {
@@ -200,15 +193,7 @@ export default async function AdminPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <form action={handleRoleChange} className="inline-flex">
-                        <input type="hidden" name="id" value={u.id} />
-                        <select name="role" defaultValue={u.role} onChange={(e) => e.currentTarget.form?.requestSubmit()} className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs text-slate-300 focus:outline-none focus:border-blue-500/50 cursor-pointer">
-                          <option value="ADMIN">Yönetici</option>
-                          <option value="MANAGER">Sorumlu</option>
-                          <option value="EMPLOYEE">Personel</option>
-                          <option value="CUSTOMER">Müşteri</option>
-                        </select>
-                      </form>
+                      <RoleSelector id={u.id} defaultRole={u.role} />
                     </td>
                     <td className="px-5 py-3 text-slate-400 text-xs">{formatDate(u.createdAt)}</td>
                     <td className="px-5 py-3 text-right">

@@ -1,5 +1,3 @@
-"use server";
-
 import { requireAuth } from "@/app/actions/auth";
 
 export interface AfyonCustomer {
@@ -13,9 +11,9 @@ export interface AfyonCustomer {
   phone: string;
   services: string[];
   lastService: string;
-  revenueYTD: number; // ₺
+  revenueYTD: number;
   status: "AKTIF" | "ARALIKLI" | "YENI" | "PASIF";
-  rating: number; // 1-5
+  rating: number;
   notes?: string;
 }
 
@@ -26,7 +24,7 @@ export interface AfyonInvoice {
   customerName: string;
   service: string;
   date: string;
-  amount: number; // ₺
+  amount: number;
   status: "PAID" | "PENDING" | "OVERDUE";
 }
 
@@ -265,8 +263,6 @@ function calculateStats(): AfyonStats {
   const topDistrict = Object.entries(districtCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "Merkez";
 
   const avgRating = AFYON_CUSTOMERS.reduce((s, c) => s + c.rating, 0) / AFYON_CUSTOMERS.length;
-
-  // Monthly revenue ≈ YTD / 5 (May itibarıyla)
   const monthlyRevenue = totalRevenue / 5;
 
   return {

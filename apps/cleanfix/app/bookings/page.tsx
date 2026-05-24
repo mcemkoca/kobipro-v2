@@ -49,10 +49,10 @@ export default function BookingsPage() {
     }
 
     if (bookingsRes.success) {
-      setBookings(bookingsRes.data || []);
+      setBookings((bookingsRes.data || []) as unknown as Booking[]);
       setError(null);
     } else {
-      setError(bookingsRes.error || "Bilinmeyen hata");
+      setError((bookingsRes as any).error || "Bilinmeyen hata");
     }
 
     if (customersRes.success) {
