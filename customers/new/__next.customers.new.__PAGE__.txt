@@ -1,9 +1,9 @@
 1:"$Sreact.fragment"
-2:I[47257,["/_next/static/chunks/01xlw8hd842-c.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"ClientPageRoot"]
-3:I[49838,["/_next/static/chunks/0ut_fbv66buy8.js","/_next/static/chunks/13i_9brf0~0x3.js","/_next/static/chunks/0~l1j8r~p2nb..js","/_next/static/chunks/0khs08t-eyh6e.js"],"default"]
-6:I[97367,["/_next/static/chunks/01xlw8hd842-c.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"OutletBoundary"]
+2:I[47257,["/kobipro-v2/_next/static/chunks/01xlw8hd842-c.js","/kobipro-v2/_next/static/chunks/00-csyj9a6t-x.js"],"ClientPageRoot"]
+3:I[49838,["/kobipro-v2/_next/static/chunks/139a._qftzv3y.js","/kobipro-v2/_next/static/chunks/0wgoc0_wc-4-..js","/kobipro-v2/_next/static/chunks/0~l1j8r~p2nb..js","/kobipro-v2/_next/static/chunks/0khs08t-eyh6e.js"],"default"]
+6:I[97367,["/kobipro-v2/_next/static/chunks/01xlw8hd842-c.js","/kobipro-v2/_next/static/chunks/00-csyj9a6t-x.js"],"OutletBoundary"]
 7:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/_next/static/chunks/0ut_fbv66buy8.js","async":true}],["$","script","script-1",{"src":"/_next/static/chunks/13i_9brf0~0x3.js","async":true}],["$","script","script-2",{"src":"/_next/static/chunks/0~l1j8r~p2nb..js","async":true}],["$","script","script-3",{"src":"/_next/static/chunks/0khs08t-eyh6e.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"IQDTuFJ--tRBLaIomnPvJ"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/kobipro-v2/_next/static/chunks/139a._qftzv3y.js","async":true}],["$","script","script-1",{"src":"/kobipro-v2/_next/static/chunks/0wgoc0_wc-4-..js","async":true}],["$","script","script-2",{"src":"/kobipro-v2/_next/static/chunks/0~l1j8r~p2nb..js","async":true}],["$","script","script-3",{"src":"/kobipro-v2/_next/static/chunks/0khs08t-eyh6e.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"NAvxCoiQsu15PDJjywQje"}
 4:{}
 5:"$0:rsc:props:children:0:props:serverProvidedParams:params"
 8:null
